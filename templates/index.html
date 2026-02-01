@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Restaurant Map</title>
+
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      html, body, #root, #map {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <script type="text/javascript">
+      // Make an account: https://console.mapbox.com/
+      mapboxgl.accessToken = "pk.eyJ1IjoiYWJpZ290IiwiYSI6ImNtbDNoZ2ZrejB0cnYzZnB4aGVkcDI4b2MifQ.s6M_2fu2bxR1Oz6XXC-PqA";
+
+      const { useEffect } = React;
+
+      function MapApp() {
+        useEffect(() => {
+          const map = new mapboxgl.Map({
+            container: "map",
+            style: "mapbox://styles/mapbox/streets-v11",
+            center: [-117.842825, 33.645963],
+            zoom: 14,
+          });
+
+          fetch("/api/restaurants/")
+            .then((r) => r.json())
+            .then((data) => {
+              data.restaurants.forEach((r) => {
+                new mapboxgl.Marker()
+                  .setLngLat([r.lng, r.lat])
+                  .setPopup(new mapboxgl.Popup().setText(r.name))
+                  .addTo(map);
+              });
+            })
+            .catch((err) => console.error("Failed to fetch restaurants:", err));
+
+          return () => map.remove();
+        }, []);
+
+        return React.createElement("div", {
+          id: "map",
+          style: { width: "100%", height: "100%" },
+        });
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(
+        React.createElement(MapApp)
+      );
+    </script>
+  </body>
+</html>
