@@ -93,3 +93,7 @@ class UserContext:
 class Feedback:
 	id: str
 	satisfaction_score: float
+
+@dataclass
+class UserPreferences:
+	pass
