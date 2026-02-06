@@ -8,9 +8,11 @@ load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 NUM_RECOMMENDATIONS = 20
-CUISINES = ["Italian", "Japanese", "Mexican", "American", "Chinese", "Indian", "French", "Spanish", "Thai", "Vietnamese", "Korean", "Turkish", "Greek", "Egyptian", "African", "Brazilian", "Peruvian", "Colombian", "Argentinian"]
-FOODS = ["sushi", "burger", "sandwich", "pizza", "ramen", "taco", "pasta", "salad", "steak", "noodles", "burrito"]
-DIETARY_KEYWORDS = ["vegan", "vegetarian", "gluten-free", "halal", "kosher", "pescatarian"]
+STOPWORDS = set((
+    "a an the and or but if then else for of to in on at by with without from as "
+    "is are was were be been being this that these those it its im youre we you "
+    "they he she them our your their"
+).split())
 
 
 # Type mapping for Google Places API
@@ -35,12 +37,10 @@ DISTANCE_REGEX = r'(\d+)\s*(mile|km|m|meter|meters)'
 OPEN_NOW_KEYWORDS = ["open now", "currently open"]
 
 def extract_keywords(query):
-    query_lower = query.lower()
-    cuisine_keywords = [c.lower() for c in CUISINES if c.lower() in query_lower]
-    food_keywords = [f.lower() for f in FOODS if f.lower() in query_lower]
-    dietary_keywords = [d.lower() for d in DIETARY_KEYWORDS if d.lower() in query_lower]
-    all_keywords = cuisine_keywords + food_keywords + dietary_keywords
-    return " ".join(all_keywords) if all_keywords else None
+    # Remove punctuation
+    query_clean = re.sub(r'[^\w\s]', '', query)
+    keywords = [word.lower() for word in query_clean.split() if word.lower() not in STOPWORDS]
+    return " ".join(keywords) if keywords else None
 
 def extract_type(query):
     query_lower = query.lower()
@@ -172,7 +172,7 @@ def get_restaurant_recommendations(request_obj, api_key=GOOGLE_API_KEY, top_n=NU
 if __name__ == "__main__":
     queries = [
         "cheap sandwiches near Irvine",
-        "vegan restaurants open now in Newport Beach",
+        "vegan restaurants open now in Newport Beach!",
         "coffee shops within 5 miles of my location"
     ]
 
