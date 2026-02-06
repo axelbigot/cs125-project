@@ -44,10 +44,10 @@ def extract_keywords(query):
 
 def extract_type(query):
     query_lower = query.lower()
-    for pt in TYPE_MAPPING:
-        if pt in query_lower:
-            return TYPE_MAPPING[pt]
-    return "restaurant"
+    for keyword, google_type in TYPE_MAPPING.items():  
+        if keyword in query_lower:
+            return google_type
+    return "restaurant"  # default
 
 def extract_price(query):
     for word, (minp, maxp) in PRICE_MAPPING.items():
