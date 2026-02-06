@@ -11,7 +11,7 @@ NUM_RECOMMENDATIONS = 20
 STOPWORDS = set((
     "a an the and or but if then else for of to in on at by with without from as "
     "is are was were be been being this that these those it its im youre we you "
-    "they he she them our your their"
+    "they he she them our your their some my"
 ).split())
 
 
@@ -171,8 +171,8 @@ def get_restaurant_recommendations(request_obj, api_key=GOOGLE_API_KEY, top_n=NU
 
 if __name__ == "__main__":
     queries = [
-        "cheap sandwiches near Irvine",
-        "vegan restaurants open now in Newport Beach!",
+        "we want cheap sandwiches near Irvine",
+        "some vegan restaurants open now in Newport Beach!",
         "coffee shops within 5 miles of my location"
     ]
 
