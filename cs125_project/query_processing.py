@@ -7,18 +7,24 @@ load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-CUISINES = ["sushi", "pizza", "burger", "vegan", "coffee", "cafe", "bar", "restaurant"]
+NUM_RECOMMENDATIONS = 20
+CUISINES = ["Italian", "Japanese", "Mexican", "American", "Chinese", "Indian", "French", "Spanish", "Thai", "Vietnamese", "Korean", "Turkish", "Greek", "Egyptian", "African", "Brazilian", "Peruvian", "Colombian", "Argentinian"]
+FOODS = ["sushi", "burger", "sandwich", "pizza", "ramen", "taco", "pasta", "salad", "steak", "noodles", "burrito"]
+DIETARY_KEYWORDS = ["vegan", "vegetarian", "gluten-free", "halal", "kosher", "pescatarian"]
+
 
 # Type mapping for Google Places API
 TYPE_MAPPING = {
     "restaurant": "restaurant",
     "cafe": "cafe",
-    "bar" : "bar"
+    "coffee shop": "cafe",
+    "bar": "bar"
 }
 
 PRICE_MAPPING = {
     "cheap": (0, 1),
     "moderate": (2, 2),
+    "mid-range": (2, 2),
     "expensive": (3, 4)
 }
 
@@ -29,18 +35,25 @@ DISTANCE_REGEX = r'(\d+)\s*(mile|km|m|meter|meters)'
 OPEN_NOW_KEYWORDS = ["open now", "currently open"]
 
 def extract_keywords(query):
-    query_words = query.lower().split()
-    keywords = [word for word in CUISINES if word in query_words]
-    if keywords:
-        return " ".join(keywords)
-    else:
-        return None
+    query_lower = query.lower()
+    cuisine_keywords = [c.lower() for c in CUISINES if c.lower() in query_lower]
+    food_keywords = [f.lower() for f in FOODS if f.lower() in query_lower]
+    dietary_keywords = [d.lower() for d in DIETARY_KEYWORDS if d.lower() in query_lower]
+    all_keywords = cuisine_keywords + food_keywords + dietary_keywords
+    return " ".join(all_keywords) if all_keywords else None
+
+def extract_type(query):
+    query_lower = query.lower()
+    for pt in TYPE_MAPPING:
+        if pt in query_lower:
+            return TYPE_MAPPING[pt]
+    return "restaurant"
 
 def extract_price(query):
     for word, (minp, maxp) in PRICE_MAPPING.items():
         if word in query.lower():
             return minp, maxp
-        return None, None
+    return None, None
 
 def extract_open_now(query):
     query_lower = query.lower()
@@ -90,8 +103,7 @@ def extract_location(query, user_location=None):
     # Fallback to user location if provided
     if user_location:
         return f"{user_location[0]},{user_location[1]}"
-    return None
-    
+
     # Fallback to user location if provided
     return user_location
 
@@ -101,6 +113,7 @@ def build_request(query, user_location=None):
     opennow = extract_open_now(query)
     radius = extract_radius(query)
     location = extract_location(query, user_location=user_location)
+    place_type = extract_type(query)
     
     request_obj = {}
     
@@ -108,14 +121,17 @@ def build_request(query, user_location=None):
         request_obj["location"] = location
         
     # Nearby Search requires radius OR rankby=distance
+    # if radius is provided, return based on popularity/relevance
     if radius:
         request_obj["radius"] = radius
+        # request_obj["rankby"] = "prominence"
     else:
         request_obj["rankby"] = "distance"
-        
+    
     if keywords:
         request_obj["keyword"] = keywords
-    request_obj["type"] = "restaurant"  # default type
+    if place_type is not None:
+        request_obj["type"] = place_type
     if minprice is not None:
         request_obj["minprice"] = minprice
     if maxprice is not None:
@@ -126,7 +142,7 @@ def build_request(query, user_location=None):
     return request_obj
 
 #Sends a Nearby Search request to Google Places API and returns top N restaurant recommendations.
-def get_restaurant_recommendations(request_obj, api_key=GOOGLE_API_KEY, top_n=5):
+def get_restaurant_recommendations(request_obj, api_key=GOOGLE_API_KEY, top_n=NUM_RECOMMENDATIONS):
     base_url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
     # Google API expects location as "lat,lng" string
     params = request_obj.copy()
@@ -155,8 +171,8 @@ def get_restaurant_recommendations(request_obj, api_key=GOOGLE_API_KEY, top_n=5)
 
 if __name__ == "__main__":
     queries = [
-        "cheap sushi near Irvine",
-        "vegan restaurants open no in Newport Beach",
+        "cheap sandwiches near Irvine",
+        "vegan restaurants open now in Newport Beach",
         "coffee shops within 5 miles of my location"
     ]
 
