@@ -2,12 +2,14 @@ import re
 import os
 import requests
 from dotenv import load_dotenv
+from preferences import UserPreferences
+from recommender import rank_places
 
 load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-NUM_RECOMMENDATIONS = 20
+NUM_RECOMMENDATIONS = 10
 STOPWORDS = set((
     "a an the and or but if then else for of to in on at by with without from as "
     "is are was were be been being this that these those it its im youre we you "
@@ -162,14 +164,17 @@ def get_restaurant_recommendations(request_obj, api_key=GOOGLE_API_KEY, top_n=NU
     
     results = []
     for place in data.get("results", [])[:top_n]:
-        name = place.get("name")
-        address = place.get("vicinity")
-        rating = place.get("rating")
-        results.append({"name": name, "address": address, "rating": rating})
+        results.append(place)
     
     return results
 
 if __name__ == "__main__":
+
+    prefs = UserPreferences(
+        dietary = {"vegan_restaurant"},
+        min_rating = 4.5
+    )
+
     queries = [
         "we want cheap sandwiches near Irvine",
         "some vegan restaurants open now in Newport Beach!",
@@ -185,7 +190,14 @@ if __name__ == "__main__":
         print("Request Object:", req)
         
         # Call API
-        recommendations = get_restaurant_recommendations(req)
+        raw_recommendations = get_restaurant_recommendations(req)
+        ranked_recommendations = rank_places(raw_recommendations, prefs)
+
         print("Top Recommendations:")
-        for r in recommendations:
-            print(f"- {r['name']} ({r.get('rating', 'N/A')} stars) - {r['address']}")
+        for r in ranked_recommendations:
+            print(
+                f"- {r['name']} ({r.get('rating', 'N/A')} stars) - {r.get('vicinity')} "
+                f"| types={r.get('types', [])}, price={r.get('price_level')}"
+            )
+        
+
