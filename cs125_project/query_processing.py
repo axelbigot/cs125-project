@@ -2,8 +2,15 @@ import re
 import os
 import requests
 from dotenv import load_dotenv
-from preferences import UserPreferences
-from recommender import rank_places
+
+# Handle imports for both module and script execution
+try:
+    from .preferences import UserPreferences
+    from .recommender import rank_places
+except ImportError:
+    # Fallback for when running as script
+    from preferences import UserPreferences
+    from recommender import rank_places
 
 load_dotenv()
 
