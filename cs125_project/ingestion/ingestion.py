@@ -74,7 +74,7 @@ class RawDataRepository:
 			with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as z:
 				for p in dir.rglob('*'):
 					if p.is_file():
-						z.write(p, p.relative_to(dir))
+						z.write(p, dir.name / p.relative_to(dir))
 
 			zip_path.rename(str((dir / zip_path.name)))
 			logging.info(f'Compressed {dir} to {zip_path}')

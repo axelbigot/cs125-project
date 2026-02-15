@@ -3,6 +3,7 @@ import sqlite3
 from sqlite3 import Connection, Cursor
 from dataclasses import dataclass
 from typing import List, Optional, Any
+from tqdm import tqdm
 
 from ingestion import *
 
@@ -122,7 +123,7 @@ class AugmentedPlacesRepository:
 				:photos_uri, :reviews_uri, :types, :hours
       )"""
 
-		for place in raw_data:
+		for place in tqdm(raw_data, desc='Migrating'):
 			p = self._massage(place)
 
 			p['types'] = json.dumps(p['types']) if p['types'] is not None else None
