@@ -3,14 +3,17 @@ import os
 import requests
 from dotenv import load_dotenv
 
+
 # Handle imports for both module and script execution
 try:
     from .preferences import UserPreferences
     from .recommender import rank_places
+    from .ingestion import AugmentedPlacesRepository, Place
 except ImportError:
     # Fallback for when running as script
     from preferences import UserPreferences
     from recommender import rank_places
+    from ingestion import AugmentedPlacesRepository, Place
 
 load_dotenv()
 
@@ -44,6 +47,8 @@ DISTANCE_REGEX = r'(\d+)\s*(mile|km|m|meter|meters)'
 
 # Open now keywords
 OPEN_NOW_KEYWORDS = ["open now", "currently open"]
+
+places_repo = AugmentedPlacesRepository()
 
 def extract_keywords(query):
     # Remove punctuation
@@ -131,11 +136,7 @@ def build_request(query, user_location=None):
         
     # Nearby Search requires radius OR rankby=distance
     # if radius is provided, return based on popularity/relevance
-    if radius:
-        request_obj["radius"] = radius
-        # request_obj["rankby"] = "prominence"
-    else:
-        request_obj["rankby"] = "distance"
+    request_obj["radius"] = radius if radius else 20000
     
     if keywords:
         request_obj["keyword"] = keywords
@@ -151,29 +152,24 @@ def build_request(query, user_location=None):
     return request_obj
 
 #Sends a Nearby Search request to Google Places API and returns top N restaurant recommendations.
-def get_restaurant_recommendations(request_obj, api_key=GOOGLE_API_KEY, top_n=NUM_RECOMMENDATIONS):
-    base_url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
-    # Google API expects location as "lat,lng" string
+def get_restaurant_recommendations(request_obj, query: str, api_key=GOOGLE_API_KEY, top_n=NUM_RECOMMENDATIONS) -> list[Place]:
     params = request_obj.copy()
     if "location" in params:
         if isinstance(params["location"], tuple):
             params["location"] = f"{params['location'][0]},{params['location'][1]}"
 
-    # Add API key
-    params["key"] = api_key
-
-    response = requests.get(base_url, params=params)
-    data = response.json()
-
-    if data.get("status") != "OK":
-        print(f"API call failed: {data.get('status')}")
-        return []
+    if 0: # location extraction not working for me
+        lat = float(params['location'][0])
+        lng = float(params['location'][1])
+    else:
+        lat = 33.645963
+        lng = -117.842825
+    places = places_repo.query_builder() \
+        .within_radius(params['radius'], lat, lng) \
+        .order_by_text_relevance(extract_keywords(query).split()) \
+        .select()
     
-    results = []
-    for place in data.get("results", [])[:top_n]:
-        results.append(place)
-    
-    return results
+    return places
 
 if __name__ == "__main__":
 
@@ -197,14 +193,14 @@ if __name__ == "__main__":
         print("Request Object:", req)
         
         # Call API
-        raw_recommendations = get_restaurant_recommendations(req)
+        raw_recommendations = get_restaurant_recommendations(req, q)
         ranked_recommendations = rank_places(raw_recommendations, prefs)
 
         print("Top Recommendations:")
         for r in ranked_recommendations:
             print(
-                f"- {r['name']} ({r.get('rating', 'N/A')} stars) - {r.get('vicinity')} "
-                f"| types={r.get('types', [])}, price={r.get('price_level')}"
+                f"- {r.name} ({r.rating if r.rating else 'N/A'} stars) - {r.address} "
+                f"| types={r.types}, price={r.price_level}"
             )
         
 

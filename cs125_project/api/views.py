@@ -58,7 +58,7 @@ def get_restaurants(request: Any):
 		request_obj = build_request(query, user_location=user_location)
 		
 		# Get raw recommendations from Google Places API
-		raw_recommendations = get_restaurant_recommendations(request_obj)
+		raw_recommendations = get_restaurant_recommendations(request_obj, query)
 		
 		if not raw_recommendations:
 			return JsonResponse({'restaurants': [], 'message': 'No restaurants found'})
@@ -75,17 +75,16 @@ def get_restaurants(request: Any):
 		# Format response for frontend
 		formatted_restaurants = []
 		for idx, place in enumerate(ranked_recommendations):
-			location = place.get('geometry', {}).get('location', {})
 			formatted_place = {
-				'id': place.get('place_id', idx),
-				'name': place.get('name', 'Unknown'),
-				'lat': location.get('lat', 0),
-				'lng': location.get('lng', 0),
-				'rating': place.get('rating', 0),
-				'price': '$' * (place.get('price_level', 0) or 0),
-				'type': ', '.join(place.get('types', [])[:2]) if place.get('types') else 'Restaurant',
-				'vicinity': place.get('vicinity', ''),
-				'image': place.get('photos', [{}])[0].get('photo_reference', '') if place.get('photos') else '',
+				'id': place.id,
+				'name': place.name,
+				'lat': place.lat,
+				'lng': place.lng,
+				'rating': place.rating,
+				'price': '$' * (place.price_level if place.price_level else 0),
+				'type': ', '.join((place.types if place.types else [])[:2]) if place.types else 'Restaurant',
+				'vicinity': place.address,
+				'image': '',
 			}
 			formatted_restaurants.append(formatted_place)
 		

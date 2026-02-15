@@ -18,8 +18,8 @@ from datetime import datetime
 from tqdm import tqdm
 from typing import *
 
-from included_types import *
-from fields import *
+from .included_types import *
+from .fields import *
 
 
 load_dotenv()

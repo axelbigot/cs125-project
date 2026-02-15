@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sqlite3
 
 from sqlite3 import Connection, Cursor
@@ -5,7 +6,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Any
 from tqdm import tqdm
 
-from ingestion import *
+from .ingestion import *
 
 
 @dataclass
@@ -51,6 +52,9 @@ class AugmentedPlacesRepository:
 			if raw_data.is_new or force_migrate:
 				self._migrate_raw(conn, raw_data)
 
+	def query_builder(self) -> PlaceQueryBuilder:
+		return PlaceQueryBuilder(self)
+
 	def all(self, limit: int = None) -> List[Place]:
 		with self._conn() as conn:
 			cursor = conn.cursor()
@@ -93,6 +97,18 @@ class AugmentedPlacesRepository:
 			row_dict = dict(zip(cols, row))
 			row_dict['types'] = json.loads(row_dict['types']) if row_dict.get('types') else None
 			row_dict['hours'] = json.loads(row_dict['hours']) if row_dict.get('hours') else None
+
+			pls = ['PRICE_LEVEL_FREE', 
+            'PRICE_LEVEL_INEXPENSIVE', 
+            'PRICE_LEVEL_MODERATE', 
+            'PRICE_LEVEL_EXPENSIVE', 
+            'PRICE_LEVEL_VERY_EXPENSIVE']
+			if row_dict['price_level'] in pls:
+				pl = pls.index(row_dict['price_level'])
+			else:
+				pl = None
+			
+			row_dict['price_level'] = pl
 
 			places.append(Place(**row_dict))
 
@@ -246,3 +262,77 @@ class AugmentedPlacesRepository:
 				return default
 			obj = obj.get(k, default)
 		return obj
+
+class PlaceQueryBuilder:
+	def __init__(self, repo: AugmentedPlacesRepository):
+		self._repo = repo
+		self._joins = []
+		self._where = []
+		self._params = []
+		self._order = []
+		self._limit = None
+
+	def within_radius(self, meters: float, lat: float, lng: float) -> 'PlaceQueryBuilder':
+		dlat = meters / 111000
+		dlng = meters / (111000 * cos(lat * (pi / 180)))
+
+		self._where.append(
+			'p.lat BETWEEN ? AND ? AND p.lng BETWEEN ? AND ?'
+		)
+
+		self._params.extend([
+			lat - dlat,
+			lat + dlat,
+			lng - dlng,
+			lng + dlng
+		])
+
+		return self
+	
+	def order_by_text_relevance(self, tokens: list[str]) -> 'PlaceQueryBuilder':
+		quoted = [f'"{t}"' for t in tokens]
+		query = " OR ".join(quoted)
+
+		if not query:
+			return self
+		
+		self._joins.append(
+			'JOIN places_fts ON p.rowid = places_fts.rowid'
+		)
+
+		self._where.append('places_fts MATCH ?')
+		self._params.append(query)
+
+		self._order.append('bm25(places_fts, 5.0, 2.0, 1.0, 1.0) ASC')
+		return self
+	
+	def select(self, limit: int = 20) -> list[Place]:
+		self._limit = limit
+
+		sql = ['SELECT p.* FROM places p']
+
+		if self._joins:
+			sql.extend(self._joins)
+		
+		if self._where:
+			sql.append('WHERE ' + ' AND '.join(self._where))
+		
+		if self._order:
+			sql.append('ORDER BY ' + ', '.join(self._order))
+
+		sql.append('LIMIT ?')
+		self._params.append(self._limit)
+
+		final_sql = '\n'.join(sql)
+
+		debug_sql = final_sql
+		for p in self._params:
+			debug_sql = debug_sql.replace('?', repr(p), 1)
+		print(debug_sql)
+
+		with self._repo._conn() as conn:
+			cursor = conn.cursor()
+			cursor.execute(final_sql, self._params)
+			rows = cursor.fetchall()
+
+			return self._repo._rows2places(rows, cursor.description)
