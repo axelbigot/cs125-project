@@ -81,7 +81,7 @@ class RawDataRepository:
 		if isinstance(index, slice):
 			return [json.load(open(p, 'r')) for p in self.place_files[index]]
 		
-		with open(self.place_files, 'r') as f:
+		with open(self.place_files[index], 'r') as f:
 			return json.load(f)
 
 	def _generate_recursive(self, 
