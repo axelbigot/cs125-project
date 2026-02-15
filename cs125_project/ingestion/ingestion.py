@@ -2,6 +2,12 @@ import requests
 import json
 import os
 import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
 import time
 import zipfile
 
@@ -23,7 +29,7 @@ API_KEY = os.getenv('GOOGLE_API_KEY')
 class RawDataRepository:
 	def __init__(self, 
 		dir: os.PathLike = None, 
-		radius_meters: float = 1000, 
+		radius_meters: float = 20000, 
 		center_lat: float = 33.645963, 
 		center_lng: float = -117.842825,
 		grid_sub_radius_meters: float = 500
@@ -56,7 +62,7 @@ class RawDataRepository:
 				timestamp = f.read()
 		else:
 			self.is_new = True
-			
+
 			grid = self._create_grid(radius_meters, center_lat, center_lng, dim=self._grid_dim(radius_meters, grid_sub_radius_meters))
 			self._generate_recursive(self._places_dir, grid)
 
