@@ -119,7 +119,7 @@ class RawDataRepository:
 			if curr_depth == 1:
 				step += 1
 				with open(step_path, 'w') as f:
-					f.write(str(step + 1))
+					f.write(str(step))
 
 	def _generate(self, dir: os.PathLike, radius: float, center_lat: float, center_lng: float) -> int:
 		dir = Path(dir)
