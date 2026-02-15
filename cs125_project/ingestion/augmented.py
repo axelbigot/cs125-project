@@ -63,16 +63,19 @@ class AugmentedPlacesRepository:
 			rows = cursor.fetchall()
 			return self._rows2places(rows, cursor.description)
 		
-	def get_by_text_relevance(self, query: str, limit: int = 20) -> List[Place]:
+	def get_by_text_relevance(self, tokens: list[str], limit: int = 20) -> List[Place]:
 		with self._conn() as conn:
 			cursor = conn.cursor()
+
+			quoted = [f'"{t}"' for t in tokens]
+			query = " OR ".join(quoted)
 			
 			cursor.execute("""
 				SELECT p.*
 				FROM places p
 				JOIN places_fts ON p.rowid = places_fts.rowid
 				WHERE places_fts MATCH ?
-				ORDER BY bm25(places_fts) ASC
+				ORDER BY bm25(places_fts, 5.0, 2.0, 1.0, 1.0) ASC
 				LIMIT ?
 			""", (query, limit))
 
