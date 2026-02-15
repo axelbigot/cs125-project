@@ -61,6 +61,22 @@ class AugmentedPlacesRepository:
 
 			rows = cursor.fetchall()
 			return self._rows2places(rows, cursor.description)
+		
+	def get_by_text_relevance(self, query: str, limit: int = 20) -> List[Place]:
+		with self._conn() as conn:
+			cursor = conn.cursor()
+			
+			cursor.execute("""
+				SELECT p.*
+				FROM places p
+				JOIN places_fts ON p.rowid = places_fts.rowid
+				WHERE places_fts MATCH ?
+				ORDER BY bm25(places_fts) ASC
+				LIMIT ?
+			""", (query, limit))
+
+			rows = cursor.fetchall()
+			return self._rows2places(rows, cursor.description)
 
 	def _rows2places(self, 
 		rows: list[Any],
@@ -87,6 +103,8 @@ class AugmentedPlacesRepository:
 		logging.info(f'Wiping places table')
 
 		cursor.execute('DELETE FROM places')
+		cursor.execute('DELETE FROM places_fts')
+
 		conn.commit()
 
 		insert_sql = """
@@ -112,6 +130,14 @@ class AugmentedPlacesRepository:
 
 			cursor.execute(insert_sql, p)
 		
+		conn.commit()
+
+		cursor.execute("""
+			INSERT INTO places_fts(rowid, id, name, human_summary, ai_summary, review_summary)
+			SELECT rowid, id, name, human_summary, ai_summary, review_summary
+			FROM places;
+		""")
+
 		conn.commit()
 
 	def _create_tables(self, conn: Connection):
@@ -147,6 +173,18 @@ class AugmentedPlacesRepository:
 								 types TEXT,
 								 hours TEXT
 		  )""")
+		
+		cursor.execute("""
+			CREATE VIRTUAL TABLE IF NOT EXISTS places_fts
+								 USING fts5(
+								 	id UNINDEXED,
+								 	name,
+								 	human_summary,
+								 	ai_summary,
+								 	review_summary,
+								 	content='places',
+								 	content_rowid='rowid'
+			)""")
 		
 		conn.commit()
 
