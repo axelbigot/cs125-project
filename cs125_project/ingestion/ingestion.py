@@ -33,6 +33,7 @@ class RawDataRepository:
 		dir = Path(dir)
 
 		dir.parent.mkdir(parents=True, exist_ok=True)
+		self.is_new = False
 		
 
 		zip_path = Path(f'{dir.name}.zip')
@@ -40,6 +41,8 @@ class RawDataRepository:
 			logging.info(f'Found compressed repository at {zip_path}. Extracting to {dir.parent}')
 			with zipfile.ZipFile(zip_path, 'r') as z:
 				z.extractall(dir.parent)
+
+			self.is_new = True
 		
 		dir.mkdir(parents=True, exist_ok=True)
 
@@ -52,6 +55,8 @@ class RawDataRepository:
 			with open(completed_at, 'r') as f:
 				timestamp = f.read()
 		else:
+			self.is_new = True
+			
 			grid = self._create_grid(radius_meters, center_lat, center_lng, dim=self._grid_dim(radius_meters, grid_sub_radius_meters))
 			self._generate_recursive(self._places_dir, grid)
 
