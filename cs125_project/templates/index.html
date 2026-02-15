@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+    <meta charset = "utf-8"/>
+    <meta name = "viewport" content = "width=device-width, initial-scale=1" />
+    <title>Restaurant Recommender</title>
+
+    <link href = "https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <link rel = "stylesheet" href="{% static 'styles.css' %}">
+
+    <script src = "https://cdn.tailwindcss.com"></script>
+    <script src = "https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script src = "https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src = "https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src = "https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+
+<body>
+    <div id = "root"></div>
+
+    <script src = "{% static 'data.js' %}" type = "text/babel"></script>
+    <script src = "{% static 'components.js' %}" type = "text/babel"></script>
+    
+    <script type = "text/babel">
+        // links to the App component defined in components.js
+        const root = ReactDOM.createRoot(document.getElementById("root"));
+        root.render(<App />);
+    </script>
+</body>
+</html>
