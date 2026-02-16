@@ -10,9 +10,10 @@ def score_place(place: Place, prefs):
     if place.rating is not None:
         score += place.rating
 
-    # Price preference
     if place.price_level is not None:
-        score += prefs.price_bias * (2 - place.price_level)
+        # Assume price_level is 0 (cheap) to N (expensive)
+        PRICE_WEIGHT = 100.0  # Large to dominate scoring
+        score += PRICE_WEIGHT * prefs.price_bias * place.price_level
 
     # Cuisine affinity
     for t in (place.types if place.types is not None else []):
