@@ -5,7 +5,7 @@
 
 const { useState, useEffect, useRef } = React;
 
-const Sidebar = ({ restaurants, onSearch, isLoading }) => {
+const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [inputValue, setInputValue] = useState('');
 
@@ -24,52 +24,63 @@ const Sidebar = ({ restaurants, onSearch, isLoading }) => {
   };
 
   return (
-    <div className = "w-1/3 max-w-sm h-full bg-white border-r border-gray-300 shadow-xl z-10 flex flex-col">
-      <div className = "p-4 border-b border-gray-200 bg-white sticky top-0 z-20">
-        <h1 className = "text-2xl font-bold text-gray-800">Restaurant Recommender</h1>
+    <div className="w-1/3 max-w-sm h-full bg-white border-r border-gray-200 shadow-[20px_0_40px_rgba(0,0,0,0.05)] z-10 flex flex-col">
+      <div className="p-6 border-b border-gray-100 bg-white sticky top-0 z-20">
+        <h1 className="text-2xl font-black text-black tracking-tighter uppercase">Restaurant</h1>
+        <h1 className="text-2xl font-black text-black tracking-tighter uppercase">Recommender</h1>
         
-        <form onSubmit={handleSearch} className = "relative mt-4">
-          <div className = "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className = "h-5 w-5 text-gray-400" fill = "none" stroke = "currentColor" viewBox = "0 0 24 24">
-              <path strokeLinecap = "round" strokeLineJoin = "round" strokeWidth = "2" d = "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <form onSubmit={handleSearch} className="relative mt-6">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLineJoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-
           <input
-            type = "text"
+            type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            className = "block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-black focus:border-black sm:text-sm transition duration-150"
-            placeholder = "e.g., cheap vegan restaurants near Irvine"
+            className="block w-full pl-11 pr-4 py-3 bg-gray-50 border border-transparent rounded-xl text-sm font-medium text-black placeholder-gray-400 focus:outline-none focus:bg-white focus:border-black focus:ring-1 focus:ring-black transition-all duration-200"
+            placeholder="Search"
             disabled={isLoading}
           />
         </form>
         
-        {isLoading ? (
-          <p className = "text-sm text-gray-500 mt-3">Searching...</p>
-        ) : (
-          <p className = "text-sm text-gray-500 mt-3">{restaurants.length} result(s) {searchQuery ? 'found' : 'nearby'}</p>
-        )}
+        <p className="text-xs font-bold text-gray-400 mt-4 uppercase tracking-widest">
+            {restaurants.length} {'Results'}
+        </p>
       </div>
 
-      <div className = "flex-1 overflow-y-auto p-2 space-y-2">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {restaurants.map((r) => (
           <div 
             key={r.id} 
-            className = "p-3 bg-white border border-gray-100 rounded-lg hover:shadow-md hover:bg-gray-50 cursor-pointer transition-all duration-200"
+            onClick={() => onSelect(r.id)}
+            className={`p-4 rounded-2xl cursor-pointer transition-all duration-300 ${
+              selectedId === r.id 
+                ? 'bg-black text-white shadow-xl transform scale-[1.02]' 
+                : 'bg-white border border-gray-100 text-black hover:border-gray-300 hover:shadow-md'
+            }`}
           >
-            <div className = "flex justify-between items-start">
-              <div>
-                <h3 className = "font-bold text-gray-900">{r.name}</h3>
-                <p className = "text-xs text-gray-500 mt-1">{r.type}</p>
+            <div className="flex justify-between items-start">
+              <div className="pr-4">
+                <h3 className={`font-black text-lg leading-tight tracking-tight ${selectedId === r.id ? 'text-white' : 'text-black'}`}>
+                    {r.name}
+                </h3>
+                <p className={`text-xs mt-1.5 font-medium ${selectedId === r.id ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {r.vicinity}
+                </p>
               </div>
-              <span className = "bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full font-medium">
+              <span className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-md font-bold ${
+                selectedId === r.id ? 'bg-white text-black' : 'bg-gray-200 text-black'
+              }`}>
                 {r.rating} ★
               </span>
             </div>
-            <div className = "mt-2 flex items-center text-sm text-gray-600">
-              <span className = "font-medium text-green-700">{r.price}</span>
+            <div className="mt-4 flex items-center text-sm">
+              <span className={`font-bold px-2 py-1 rounded bg-transparent ${selectedId === r.id ? 'text-white' : 'text-black'}`}>
+                {r.price}
+              </span>
             </div>
           </div>
         ))}
@@ -78,9 +89,11 @@ const Sidebar = ({ restaurants, onSearch, isLoading }) => {
   );
 };
 
-const MapView = ({ restaurants }) => {
+const MapView = ({ restaurants, selectedId }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const markersRef = useRef({});
+
   const MAPBOX_TOKEN = "pk.eyJ1IjoiYWJpZ290IiwiYSI6ImNtbDNoZ2ZrejB0cnYzZnB4aGVkcDI4b2MifQ.s6M_2fu2bxR1Oz6XXC-PqA";
 
   useEffect(() => {
@@ -108,6 +121,9 @@ const MapView = ({ restaurants }) => {
       currentMarkers[0].parentNode.removeChild(currentMarkers[0]);
     }
 
+    Object.values(markersRef.current).forEach(marker => marker.remove());
+    markersRef.current = {};
+
     // Calculate center of all restaurants
     const avgLat = restaurants.reduce((sum, r) => sum + (r.lat || 0), 0) / restaurants.length;
     const avgLng = restaurants.reduce((sum, r) => sum + (r.lng || 0), 0) / restaurants.length;
@@ -116,8 +132,9 @@ const MapView = ({ restaurants }) => {
     if (restaurants.length > 0) {
       mapRef.current.flyTo({
         center: [avgLng, avgLat],
-        zoom: 13,
-        duration: 1000
+        duration: 500,
+        zoom: 14,
+        pitch: 45,
       });
     }
 
@@ -133,34 +150,69 @@ const MapView = ({ restaurants }) => {
       const image = r.image || 'https://images.adsttc.com/media/images/5e4c/1025/6ee6/7e0b/9d00/0877/newsletter/feature_-_Main_hall_1.jpg?1582043123';
 
       const popupHTML = `
-        <div class="w-60 overflow-hidden font-sans bg-white shadow-lg">
-          <div class="h-32 w-full bg-cover bg-center" style="background-image: url('${image}')"></div>
-          <div class="p-4">
-            <h3 class="font-bold text-lg text-gray-900">${r.name || 'Unknown'}</h3>
-            <div class="flex items-center text-sm text-gray-500 mt-1">
-              <span class="text-yellow-500 font-bold mr-1">★ ${rating.toFixed(1)}</span>
-              <span>• ${price} • ${type}</span>
+        <div class="w-64 overflow-hidden font-sans bg-white">
+          <div class="h-40 w-full bg-cover bg-center relative" style="background-image: url('${image}')">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          </div>
+          <div class="p-5">
+            <h3 class="font-black text-xl text-black tracking-tight leading-tight">${r.name || 'Unknown'}</h3>
+            <div class="flex items-center text-sm mt-3">
+              <span class="bg-black text-white px-2 py-0.5 rounded text-xs font-bold mr-2">★ ${rating.toFixed(1)}</span>
+              <span class="text-gray-500 font-bold">${price} </span>
             </div>
-            ${r.vicinity ? `<p class="text-xs text-gray-400 mt-2">${r.vicinity}</p>` : ''}
-            <button class="mt-4 w-full bg-gray-900 text-white py-2 rounded-lg hover:bg-black transition text-sm">View Details</button>
+            ${r.vicinity ? `<p class="text-xs text-gray-400 mt-3 font-medium uppercase tracking-wider">${r.vicinity}</p>` : ''}
+            <button class="mt-5 w-full bg-black text-white font-black tracking-widest uppercase py-3 rounded-lg hover:bg-gray-800 transition-colors text-xs">View Details</button>
           </div>
         </div>
       `;
 
-      new mapboxgl.Marker(el)
+      const popup = new mapboxgl.Popup({ offset: 25, closeButton: true }).setHTML(popupHTML);
+      const marker = new mapboxgl.Marker(el)
         .setLngLat([r.lng, r.lat])
-        .setPopup(new mapboxgl.Popup({ offset: 25, closeButton: false }).setHTML(popupHTML))
+        .setPopup(popup)
         .addTo(mapRef.current);
+
+      markersRef.current[r.id] = marker;
     });
   }, [restaurants]);
+
+  useEffect(() => {
+    if (!mapRef.current || !selectedId || !restaurants.length) return;
+
+    const selectedData = restaurants.find(r => r.id === selectedId);
+    const selectedMarker = markersRef.current[selectedId];
+
+    Object.values(markersRef.current).forEach(marker => {
+      const p = marker.getPopup();
+      if (p && p.isOpen()) p.remove(); 
+    });
+
+    if (selectedData) {
+      mapRef.current.flyTo({
+        center: [selectedData.lng, selectedData.lat],
+        zoom: 16, 
+        pitch: 60, 
+        duration: 1500, 
+        essential: true
+      });
+    }
+
+    if (selectedMarker) {
+      const popup = selectedMarker.getPopup();
+      if (!popup.isOpen()) {
+        selectedMarker.togglePopup();
+      }
+    }
+  }, [selectedId, restaurants]);
 
   return <div ref={mapContainerRef} className="w-full h-full" />;
 };
 
 const App = () => {
-  const [restaurants, setRestaurants] = useState(TEST_RESTAURANTS);
+  const [restaurants, setRestaurants] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
 
   // Get user's current location on mount
   useEffect(() => {
@@ -229,8 +281,9 @@ const App = () => {
     } finally {
       setIsLoading(false);
     }
-  };
 
+    setSelectedId(null);
+  };
 
   return (
     <div className="flex w-full h-full relative overflow-hidden">
@@ -238,10 +291,15 @@ const App = () => {
         restaurants={restaurants} 
         onSearch={handleSearch}
         isLoading={isLoading}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
       />
 
       <div className = "flex-1 relative">
-        <MapView restaurants={restaurants} />
+        <MapView 
+          restaurants={restaurants} 
+          selectedId={selectedId}
+        />
       </div>
     </div>
   );
