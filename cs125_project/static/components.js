@@ -5,6 +5,86 @@
 
 const { useState, useEffect, useRef } = React;
 
+const StartPage = ({ isOpen, onClose, onSave, initialPrefs }) => {
+  const [prefs, setPrefs] = useState(initialPrefs || {
+    dietary: [],
+    maxPrices: 4,
+    minRating: 3.5
+  });
+
+  if (!isOpen) return null;
+
+  const handleDietaryToggle = (diet) => {
+    setPrefs(prev => ({
+      ...prev,
+      dietary: prev.dietary.includes(diet) ? prev.dietary.filter(d => d !== diet) : [...prev.dietary, diet]
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 overflow-hidden">
+        <div className="flex justify-between items-center mb-1">
+          <h2 className="text-2xl font-black tracking-tight uppercase">Welcome</h2>
+          <button 
+            onClick={() => console.log('Sign up clicked')}
+            className="bg-black text-white font-black tracking-widest uppercase px-4 py-1 rounded-xl hover:bg-gray-800 transition-colors mt-2"
+          >
+            Sign Up
+          </button>
+        </div>
+        <h4 className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Enter your preferences</h4>
+
+        <div className="mb-6">
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Dietary Needs</label>
+          <div className="flex flex-wrap gap-2">
+            {['Vegetarian', 'Vegan', 'Gluten-Free'].map(diet => (
+              <button
+                key={diet}
+                onClick={() => handleDietaryToggle(diet)}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                  prefs.dietary.includes(diet) 
+                    ? 'bg-black text-white' 
+                    : 'bg-gray-100 text-black hover:bg-gray-200'
+                }`}
+              >
+                {diet}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Max Price Level</label>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4].map(price => (
+              <button
+                key={price}
+                onClick={() => setPrefs({...prefs, maxPrice: price})}
+                className={`flex-1 py-2 rounded-lg font-bold transition-all ${
+                  prefs.maxPrice >= price ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
+                }`}
+              >
+                {'$'.repeat(price)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button 
+          onClick={() => {
+            onSave(prefs);
+            onClose();
+          }}
+          className="w-full bg-black text-white font-black tracking-widest uppercase py-4 rounded-xl hover:bg-gray-800 transition-colors mt-4"
+        >
+          Submit
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [inputValue, setInputValue] = useState('');
@@ -213,6 +293,7 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
+  const [showStartPage, setShowStartPage] = useState(true);
 
   // Get user's current location on mount
   useEffect(() => {
@@ -287,6 +368,14 @@ const App = () => {
 
   return (
     <div className="flex w-full h-full relative overflow-hidden">
+      <StartPage 
+        isOpen={showStartPage} 
+        onClose={() => setShowStartPage(false)} 
+        onSave={(prefs) => {
+          console.log("save preferences (to be implemented)", prefs);
+        }} 
+      />
+      
       <Sidebar 
         restaurants={restaurants} 
         onSearch={handleSearch}
