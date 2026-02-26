@@ -5,19 +5,29 @@
 
 const { useState, useEffect, useRef } = React;
 
-const StartPage = ({ isOpen, onClose, onSave, initialPrefs }) => {
+const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLoggedIn }) => {
   const [prefs, setPrefs] = useState(initialPrefs || {
     dietary: [],
-    maxPrices: 4,
-    minRating: 3.5
+    maxPrice: 1,
+    minRating: 3,
+    adventurousness: 'Balanced'
   });
 
   if (!isOpen) return null;
 
+  const handleThresholdToggle = (field, value) => {
+    setPrefs(prev => ({
+      ...prev,
+      [field]: prev[field] === value ? 0 : value
+    }));
+  };
+
   const handleDietaryToggle = (diet) => {
     setPrefs(prev => ({
       ...prev,
-      dietary: prev.dietary.includes(diet) ? prev.dietary.filter(d => d !== diet) : [...prev.dietary, diet]
+      dietary: prev.dietary.includes(diet) 
+        ? prev.dietary.filter(d => d !== diet) 
+        : [...prev.dietary, diet]
     }));
   };
 
@@ -26,11 +36,17 @@ const StartPage = ({ isOpen, onClose, onSave, initialPrefs }) => {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 overflow-hidden">
         <div className="flex justify-between items-center mb-1">
           <h2 className="text-2xl font-black tracking-tight uppercase">Welcome</h2>
+          
           <button 
-            onClick={() => console.log('Sign up clicked')}
-            className="bg-black text-white font-black tracking-widest uppercase px-4 py-1 rounded-xl hover:bg-gray-800 transition-colors mt-2"
+            onClick={isLoggedIn ? null : onSignUpClick} 
+            disabled={isLoggedIn} 
+            className={`font-black tracking-widest uppercase px-4 py-1 rounded-xl transition-colors mt-2 ${
+              isLoggedIn 
+                ? 'bg-gray-100 text-gray-400 cursor-default' 
+                : 'bg-black text-white hover:bg-gray-800'   
+            }`}
           >
-            Sign Up
+            {isLoggedIn ? 'Logged In' : 'Sign Up'}
           </button>
         </div>
         <h4 className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Enter your preferences</h4>
@@ -60,7 +76,7 @@ const StartPage = ({ isOpen, onClose, onSave, initialPrefs }) => {
             {[1, 2, 3, 4].map(price => (
               <button
                 key={price}
-                onClick={() => setPrefs({...prefs, maxPrice: price})}
+                onClick={() => handleThresholdToggle('maxPrice', price)}
                 className={`flex-1 py-2 rounded-lg font-bold transition-all ${
                   prefs.maxPrice >= price ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
                 }`}
@@ -72,19 +88,38 @@ const StartPage = ({ isOpen, onClose, onSave, initialPrefs }) => {
         </div>
 
         <div className="mb-6">
-          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Max Ratings</label>
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Min Ratings</label>
           <div className="flex gap-2">
             {[1, 2, 3, 4, 5].map(star => (
-            <button
-              key={star}
-              onClick={() => setPrefs({...prefs, maxRating: star})}
-             
-              className={`flex-1 py-2 rounded-lg font-bold transition-all ${
-                prefs.maxRating >= star ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
-              }`}
-            >
-              {'★'.repeat(star)}
-            </button>
+              <button
+                key={star}
+                onClick={() => handleThresholdToggle('minRating', star)}
+                className={`flex-1 py-2 rounded-lg font-bold transition-all ${
+                  prefs.minRating >= star ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
+                }`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Adventurousness</label>
+          <div className="flex gap-2">
+            {['Safe', 'Balanced', 'Experimental'].map((level) => (
+              <button
+                key={level}
+                type="button"
+                onClick={() => setPrefs({ ...prefs, adventurousness: level })}
+                className={`flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
+                  prefs.adventurousness === level
+                    ? 'bg-black text-white'
+                    : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                }`}
+              >
+                {level}
+              </button>
             ))}
           </div>
         </div>
@@ -98,6 +133,70 @@ const StartPage = ({ isOpen, onClose, onSave, initialPrefs }) => {
         >
           Submit
         </button>
+      </div>
+    </div>
+  );
+}
+
+const SignUpPage = ({ isOpen, onClose, onSignUp }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('add to database (to be implemented):', { email, password });
+    onSignUp({ email, password });
+    onClose();
+  };  
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative overflow-hidden">
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 text-gray-400 hover:text-black transition-colors"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 className="text-2xl font-black tracking-tight uppercase mb-2">Create Account or Login</h2>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Email Address</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl text-sm font-medium focus:outline-none focus:bg-white focus:border-black transition-all"
+              placeholder="JohnRestaurant@gmail.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Password</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl text-sm font-medium focus:outline-none focus:bg-white focus:border-black transition-all"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button 
+            type="submit"
+            className="w-full bg-black text-white font-black tracking-widest uppercase py-4 rounded-xl hover:bg-gray-800 transition-colors mt-4"
+          >
+            Create Account
+          </button>
+        </form>
       </div>
     </div>
   );
@@ -312,6 +411,8 @@ const App = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [showStartPage, setShowStartPage] = useState(true);
+  const [showSignUp, setShowSignUp] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Get user's current location on mount
   useEffect(() => {
@@ -388,12 +489,28 @@ const App = () => {
     <div className="flex w-full h-full relative overflow-hidden">
       <StartPage 
         isOpen={showStartPage} 
+        isLoggedIn={isLoggedIn}
         onClose={() => setShowStartPage(false)} 
-        onSave={(prefs) => {
-          console.log("save preferences (to be implemented)", prefs);
-        }} 
+        onSignUpClick={() => {
+          setShowSignUp(true);
+        }}
+        onSave={(prefs) => console.log("preferences saved (to be implemented):", prefs)} 
       />
       
+      <SignUpPage 
+        isOpen={showSignUp}
+        onClose={() => {
+          setShowSignUp(false)
+          setShowStartPage(true);
+        }}
+        onSignUp={(data) => {
+          console.log("user registered (to be implemented):", data);
+          setIsLoggedIn(true);
+          setShowSignUp(false);
+          setShowStartPage(true);
+        }}
+      />
+
       <Sidebar 
         restaurants={restaurants} 
         onSearch={handleSearch}
