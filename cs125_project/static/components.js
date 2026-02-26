@@ -505,6 +505,7 @@ const App = () => {
         }}
         onSignUp={(data) => {
           console.log("user registered (to be implemented):", data);
+          console.log("if user exists in database then hide landing page");
           setIsLoggedIn(true);
           setShowSignUp(false);
           setShowStartPage(true);
