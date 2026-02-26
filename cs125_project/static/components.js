@@ -71,6 +71,24 @@ const StartPage = ({ isOpen, onClose, onSave, initialPrefs }) => {
           </div>
         </div>
 
+        <div className="mb-6">
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Max Ratings</label>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map(star => (
+            <button
+              key={star}
+              onClick={() => setPrefs({...prefs, maxRating: star})}
+             
+              className={`flex-1 py-2 rounded-lg font-bold transition-all ${
+                prefs.maxRating >= star ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
+              }`}
+            >
+              {'★'.repeat(star)}
+            </button>
+            ))}
+          </div>
+        </div>
+
         <button 
           onClick={() => {
             onSave(prefs);
