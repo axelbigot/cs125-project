@@ -5,7 +5,14 @@
 
 const { useState, useEffect, useRef } = React;
 
+const MAPBOX_TOKEN = "pk.eyJ1IjoiYWJpZ290IiwiYSI6ImNtbDNoZ2ZrejB0cnYzZnB4aGVkcDI4b2MifQ.s6M_2fu2bxR1Oz6XXC-PqA";
+const DEFAULT_IMAGE_URL = "https://images.adsttc.com/media/images/5e4c/1025/6ee6/7e0b/9d00/0877/newsletter/feature_-_Main_hall_1.jpg?1582043123";
+const DEFAULT_LOCATION = { lat: 33.6846, lng: -117.8265 };
+
+/* START PAGE */
 const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLoggedIn }) => {
+  
+  // Initialize user preferences
   const [prefs, setPrefs] = useState(initialPrefs || {
     dietary: [],
     maxPrice: 1,
@@ -15,6 +22,7 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
 
   if (!isOpen) return null;
 
+  // Toggles numeric thresholds values
   const handleThresholdToggle = (field, value) => {
     setPrefs(prev => ({
       ...prev,
@@ -22,6 +30,7 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
     }));
   };
 
+  // Toggles dietary requirements
   const handleDietaryToggle = (diet) => {
     setPrefs(prev => ({
       ...prev,
@@ -34,6 +43,8 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 overflow-hidden">
+        
+        {/* Header Section */}
         <div className="flex justify-between items-center mb-1">
           <h2 className="text-2xl font-black tracking-tight uppercase">Welcome</h2>
           
@@ -49,8 +60,10 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
             {isLoggedIn ? 'Logged In' : 'Sign Up'}
           </button>
         </div>
+
         <h4 className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Enter your preferences</h4>
 
+        {/* Dietary Selection */}
         <div className="mb-6">
           <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Dietary Needs</label>
           <div className="flex flex-wrap gap-2">
@@ -70,6 +83,7 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
           </div>
         </div>
 
+        {/* Max Price */}
         <div className="mb-6">
           <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Max Price Level</label>
           <div className="flex gap-2">
@@ -86,7 +100,8 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
             ))}
           </div>
         </div>
-
+        
+        {/* Min Rating */}
         <div className="mb-6">
           <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Min Ratings</label>
           <div className="flex gap-2">
@@ -104,6 +119,7 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
           </div>
         </div>
 
+        {/* Adventurousness */}
         <div className="mb-6">
           <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Adventurousness</label>
           <div className="flex gap-2">
@@ -124,6 +140,7 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
           </div>
         </div>
 
+        {/* Submit Button */}
         <button 
           onClick={() => {
             onSave(prefs);
@@ -138,6 +155,7 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
   );
 }
 
+/* SIGN UP PAGE */
 const SignUpPage = ({ isOpen, onClose, onSignUp }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -146,7 +164,9 @@ const SignUpPage = ({ isOpen, onClose, onSignUp }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // TODO: Implement actual database connection/authentication here
     console.log('add to database (to be implemented):', { email, password });
+   
     onSignUp({ email, password });
     onClose();
   };  
@@ -154,10 +174,11 @@ const SignUpPage = ({ isOpen, onClose, onSignUp }) => {
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative overflow-hidden">
+        
+        {/* Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 text-gray-400 hover:text-black transition-colors"
-        >
+          className="absolute top-6 right-6 text-gray-400 hover:text-black transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -202,6 +223,7 @@ const SignUpPage = ({ isOpen, onClose, onSignUp }) => {
   );
 }
 
+/* SIDEBAR */
 const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [inputValue, setInputValue] = useState('');
@@ -222,6 +244,8 @@ const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect }) => 
 
   return (
     <div className="w-1/3 max-w-sm h-full bg-white border-r border-gray-200 shadow-[20px_0_40px_rgba(0,0,0,0.05)] z-10 flex flex-col">
+      
+      {/* Search Header */}
       <div className="p-6 border-b border-gray-100 bg-white sticky top-0 z-20">
         <h1 className="text-2xl font-black text-black tracking-tighter uppercase">Restaurant</h1>
         <h1 className="text-2xl font-black text-black tracking-tighter uppercase">Recommender</h1>
@@ -248,6 +272,7 @@ const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect }) => 
         </p>
       </div>
 
+      {/* Restaurant List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {restaurants.map((r) => (
           <div 
@@ -286,13 +311,13 @@ const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect }) => 
   );
 };
 
+/* MAP VIEW */
 const MapView = ({ restaurants, selectedId }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
 
-  const MAPBOX_TOKEN = "pk.eyJ1IjoiYWJpZ290IiwiYSI6ImNtbDNoZ2ZrejB0cnYzZnB4aGVkcDI4b2MifQ.s6M_2fu2bxR1Oz6XXC-PqA";
-
+  // Initialize Mapbox
   useEffect(() => {
     mapboxgl.accessToken = MAPBOX_TOKEN;
     mapRef.current = new mapboxgl.Map({
@@ -306,18 +331,21 @@ const MapView = ({ restaurants, selectedId }) => {
     mapRef.current.on('load', () => mapRef.current.resize());
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
+    // Cleanup map instance
     return () => mapRef.current.remove();
   }, []);
 
+  // Update map markers when restaurants array is modified
   useEffect(() => {
     if (!mapRef.current || !restaurants || restaurants.length === 0) return;
 
-    // clear existing markers
+    // Clear existing DOM markers
     const currentMarkers = document.getElementsByClassName('marker');
     while(currentMarkers[0]) {
       currentMarkers[0].parentNode.removeChild(currentMarkers[0]);
     }
 
+    // Clear marker instances from ref
     Object.values(markersRef.current).forEach(marker => marker.remove());
     markersRef.current = {};
 
@@ -335,6 +363,7 @@ const MapView = ({ restaurants, selectedId }) => {
       });
     }
 
+    // Generate new markers and popups
     restaurants.forEach(r => {
       if (!r.lat || !r.lng) return; // Skip if coordinates missing
       
@@ -373,12 +402,14 @@ const MapView = ({ restaurants, selectedId }) => {
     });
   }, [restaurants]);
 
+  // Handle selecting popup for specific restaurant in sidebar
   useEffect(() => {
     if (!mapRef.current || !selectedId || !restaurants.length) return;
 
     const selectedData = restaurants.find(r => r.id === selectedId);
     const selectedMarker = markersRef.current[selectedId];
 
+    // Close any open popus
     Object.values(markersRef.current).forEach(marker => {
       const p = marker.getPopup();
       if (p && p.isOpen()) p.remove(); 
@@ -394,6 +425,7 @@ const MapView = ({ restaurants, selectedId }) => {
       });
     }
 
+    // Open target marker popup
     if (selectedMarker) {
       const popup = selectedMarker.getPopup();
       if (!popup.isOpen()) {
@@ -405,6 +437,9 @@ const MapView = ({ restaurants, selectedId }) => {
   return <div ref={mapContainerRef} className="w-full h-full" />;
 };
 
+
+
+/* MAIN APP */
 const App = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -426,16 +461,19 @@ const App = () => {
         },
         (error) => {
           console.log('Geolocation error:', error);
+          
           // Default to Irvine if geolocation fails
-          setUserLocation({ lat: 33.6846, lng: -117.8265 });
+          setUserLocation(DEFAULT_LOCATION);
         }
       );
     } else {
+
       // Default to Irvine if geolocation not supported
-      setUserLocation({ lat: 33.6846, lng: -117.8265 });
+      setUserLocation(DEFAULT_LOCATION);
     }
   }, []);
 
+  // API call to fetch restaurants on search query
   const handleSearch = async (query) => {
     if (!query.trim()) return;
 
@@ -471,7 +509,7 @@ const App = () => {
       // Format restaurants for display
       const formattedRestaurants = data.restaurants.map(r => ({
         ...r,
-        image: r.image || 'https://images.adsttc.com/media/images/5e4c/1025/6ee6/7e0b/9d00/0877/newsletter/feature_-_Main_hall_1.jpg?1582043123'
+        image: r.image || DEFAULT_IMAGE_URL
       }));
 
       setRestaurants(formattedRestaurants);
