@@ -4,8 +4,10 @@ from collections import defaultdict
 @dataclass
 class UserPreferences:
     cuisines: dict = field(default_factory = lambda: defaultdict(float))
-    price_bias: float = 5     # negative = cheaper preference
+    price_bias: float = 0    # negative = cheaper preference
+    max_price: int = 4
     min_rating: float = 0.0
+    adventurousness: str = 'Balanced'
     disliked_places: set = field(default_factory = set)
     dietary: set = field(default_factory = set)     # vegan, halal, etc
 

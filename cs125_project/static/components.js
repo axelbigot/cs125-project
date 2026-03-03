@@ -15,8 +15,8 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
   // Initialize user preferences
   const [prefs, setPrefs] = useState(initialPrefs || {
     dietary: [],
-    maxPrice: 1,
-    minRating: 3,
+    maxPrice: 4,
+    minRating: 0,
     adventurousness: 'Balanced'
   });
 
@@ -449,6 +449,13 @@ const App = () => {
   const [showSignUp, setShowSignUp] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  const [userPrefs, setUserPrefs] = useState({
+    dietary: [],
+    maxPrice: 4, 
+    minRating: 0,
+    adventurousness: 'Balanced'
+  })
+
   // Get user's current location on mount
   useEffect(() => {
     if (navigator.geolocation) {
@@ -476,19 +483,13 @@ const App = () => {
   // API call to fetch restaurants on search query
   const handleSearch = async (query) => {
     if (!query.trim()) return;
-
     setIsLoading(true);
+    
     try {
       // Prepare request data
-      const requestData = {
-        query: query,
-      };
-
-      // Add user location if available
-      if (userLocation) {
-        requestData.lat = userLocation.lat;
-        requestData.lng = userLocation.lng;
-      }
+      const enhancedQuery = userPrefs.dietary.length > 0 
+        ? `${query} ${userPrefs.dietary.join(' ')}` 
+        : query;
 
       // Make API call
       const response = await fetch('/api/restaurants/', {
@@ -496,7 +497,17 @@ const App = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify({
+          query: enhancedQuery,
+          lat: userLocation?.lat,
+          lng: userLocation?.lng,
+          preferences: {
+            dietary: userPrefs.dietary,
+            max_price: userPrefs.maxPrice,
+            min_rating: userPrefs.minRating,
+            adventurousness: userPrefs.adventurousness
+          }
+        })
       });
 
       if (!response.ok) {
@@ -527,12 +538,13 @@ const App = () => {
     <div className="flex w-full h-full relative overflow-hidden">
       <StartPage 
         isOpen={showStartPage} 
+        initialPrefs={userPrefs}
         isLoggedIn={isLoggedIn}
         onClose={() => setShowStartPage(false)} 
         onSignUpClick={() => {
           setShowSignUp(true);
         }}
-        onSave={(prefs) => console.log("preferences saved (to be implemented):", prefs)} 
+        onSave={(prefs) => setUserPrefs(prefs)} 
       />
       
       <SignUpPage 

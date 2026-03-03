@@ -66,7 +66,9 @@ def get_restaurants(request: Any):
 		# Create user preferences from request data
 		prefs = UserPreferences(
 			dietary=set(prefs_data.get('dietary', [])),
-			min_rating=prefs_data.get('min_rating', 0.0)
+			min_rating=float(prefs_data.get('min_rating', 0.0)),
+			max_price=int(prefs_data.get('max_price', 4)),
+			adventurousness=prefs_data.get('adventurousness', 'Balanced')
 		)
 		
 		# Rank recommendations based on preferences

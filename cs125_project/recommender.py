@@ -4,6 +4,17 @@ except ImportError:
     from ingestion import Place
 
 def score_place(place: Place, prefs):
+    # Hard constraints
+    if place.rating and place.rating < prefs.min_rating:
+        return float("-inf")
+    
+    if place.price_level and place.price_level > prefs.max_price:
+        return float("-inf")
+
+    if prefs.dietary:
+        if not prefs.dietary.intersection(set(place.types if place.types is not None else [])):
+            return float("-inf")
+            
     score = 0.0
 
     # Rating
@@ -19,10 +30,6 @@ def score_place(place: Place, prefs):
     for t in (place.types if place.types is not None else []):
         score += prefs.cuisines.get(t, 0.0)
 
-    # Dietary filter (hard constraint)
-    if prefs.dietary:
-        if not prefs.dietary.intersection(set(place.types if place.types is not None else [])):
-            return float("-inf")
 
     return score
 
