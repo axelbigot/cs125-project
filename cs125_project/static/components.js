@@ -620,6 +620,13 @@ const App = () => {
           } catch (e) {
             // ignore
           }
+          // After saving preferences, immediately fetch recommendations
+          // using a generic query so the user doesn't land on an empty state.
+          try {
+            await handleSearch('restaurants');
+          } catch (e) {
+            // ignore
+          }
         }} 
       />
       
