@@ -9,6 +9,39 @@ const MAPBOX_TOKEN = "pk.eyJ1IjoiYWJpZ290IiwiYSI6ImNtbDNoZ2ZrejB0cnYzZnB4aGVkcDI
 const DEFAULT_IMAGE_URL = "https://images.adsttc.com/media/images/5e4c/1025/6ee6/7e0b/9d00/0877/newsletter/feature_-_Main_hall_1.jpg?1582043123";
 const DEFAULT_LOCATION = { lat: 33.6846, lng: -117.8265 };
 
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+};
+
+const ensureCsrfCookie = async () => {
+  // Hitting this endpoint sets csrftoken cookie (and returns a token).
+  try {
+    await fetch('/api/csrf/', { credentials: 'same-origin' });
+  } catch (e) {
+    // ignore
+  }
+};
+
+const apiFetch = async (url, options = {}) => {
+  const method = (options.method || 'GET').toUpperCase();
+  const headers = { ...(options.headers || {}) };
+
+  if (method !== 'GET' && method !== 'HEAD') {
+    await ensureCsrfCookie();
+    const csrf = getCookie('csrftoken');
+    if (csrf) headers['X-CSRFToken'] = csrf;
+  }
+
+  return fetch(url, {
+    credentials: 'same-origin',
+    ...options,
+    headers,
+  });
+};
+
 /* START PAGE */
 const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLoggedIn }) => {
   
@@ -456,6 +489,33 @@ const App = () => {
     adventurousness: 'Balanced'
   })
 
+  // Load preferences (backend if logged in, else localStorage/session)
+  useEffect(() => {
+    const loadPrefs = async () => {
+      // Fast path: localStorage (for instant UI)
+      try {
+        const raw = localStorage.getItem('userPrefs');
+        if (raw) setUserPrefs(JSON.parse(raw));
+      } catch (e) {
+        // ignore
+      }
+
+      // Backend path: session or authenticated prefs
+      try {
+        const resp = await apiFetch('/api/preferences/', { method: 'GET' });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data?.preferences) setUserPrefs(data.preferences);
+          setIsLoggedIn(!!data?.authenticated);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    loadPrefs();
+  }, []);
+
   // Get user's current location on mount
   useEffect(() => {
     if (navigator.geolocation) {
@@ -544,7 +604,23 @@ const App = () => {
         onSignUpClick={() => {
           setShowSignUp(true);
         }}
-        onSave={(prefs) => setUserPrefs(prefs)} 
+        onSave={async (prefs) => {
+          setUserPrefs(prefs);
+          try {
+            localStorage.setItem('userPrefs', JSON.stringify(prefs));
+          } catch (e) {
+            // ignore
+          }
+          try {
+            await apiFetch('/api/preferences/', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(prefs),
+            });
+          } catch (e) {
+            // ignore
+          }
+        }} 
       />
       
       <SignUpPage 
@@ -553,10 +629,49 @@ const App = () => {
           setShowSignUp(false)
           setShowStartPage(true);
         }}
-        onSignUp={(data) => {
-          console.log("user registered (to be implemented):", data);
-          console.log("if user exists in database then hide landing page");
-          setIsLoggedIn(true);
+        onSignUp={async (data) => {
+          // Try login first; if it fails, try signup.
+          let authed = false;
+          try {
+            const loginResp = await apiFetch('/api/auth/login/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+            });
+            authed = loginResp.ok;
+          } catch (e) {
+            // ignore
+          }
+
+          if (!authed) {
+            try {
+              const signupResp = await apiFetch('/api/auth/signup/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+              });
+              authed = signupResp.ok;
+            } catch (e) {
+              // ignore
+            }
+          }
+
+          if (authed) {
+            setIsLoggedIn(true);
+            // Persist current prefs to the logged-in user profile
+            try {
+              await apiFetch('/api/preferences/', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userPrefs),
+              });
+            } catch (e) {
+              // ignore
+            }
+          } else {
+            alert('Login/Signup failed. Check your email/password.');
+          }
+
           setShowSignUp(false);
           setShowStartPage(true);
         }}

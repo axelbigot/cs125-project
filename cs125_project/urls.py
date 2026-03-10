@@ -19,11 +19,16 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
 
-from .api.views import get_restaurants
+from .api.views import csrf, get_restaurants, login_view, logout_view, preferences, signup
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
 	path('api/restaurants/', get_restaurants),
+	path('api/csrf/', csrf),
+	path('api/auth/signup/', signup),
+	path('api/auth/login/', login_view),
+	path('api/auth/logout/', logout_view),
+	path('api/preferences/', preferences),
 	path('', TemplateView.as_view(template_name='index.html')),
 ]

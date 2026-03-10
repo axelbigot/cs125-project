@@ -82,7 +82,9 @@ class ScoredCuisine:
 class UserPreferences:
 	cuisine_preferences: Dict[CuisineType, ScoredCuisine] = field(default_factory=dict)
 	price_bias: float = 5
+	max_price: int = 4
 	min_rating: float = 0.0
+	adventurousness: str = "Balanced"
 	disliked_places: Dict[str, ScoredRestaurant] = field(default_factory=dict)
 	like_places: Dict[str, ScoredRestaurant] = field(default_factory=dict)
 	dietary: set = field(default_factory=set) # vegan, halal, etc

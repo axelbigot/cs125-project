@@ -5,7 +5,130 @@ from ..recommender import rank_places
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
+from django.middleware.csrf import get_token
 import json
+
+from .models import UserPreference
+
+
+def _default_prefs_dict() -> dict:
+	return {
+		"dietary": [],
+		"maxPrice": 4,
+		"minRating": 0,
+		"adventurousness": "Balanced",
+	}
+
+
+def _prefs_from_payload(data: dict) -> dict:
+	prefs = _default_prefs_dict()
+	if not isinstance(data, dict):
+		return prefs
+	if isinstance(data.get("dietary"), list):
+		prefs["dietary"] = [str(x) for x in data.get("dietary", [])]
+	if data.get("maxPrice") is not None:
+		prefs["maxPrice"] = int(data["maxPrice"])
+	if data.get("minRating") is not None:
+		prefs["minRating"] = int(data["minRating"])
+	if data.get("adventurousness") is not None:
+		prefs["adventurousness"] = str(data["adventurousness"])
+	return prefs
+
+
+@require_http_methods(["GET"])
+def csrf(request: Any):
+	"""
+	Ensures a CSRF cookie is set and returns token.
+	Useful for JS apps using session auth.
+	"""
+	return JsonResponse({"csrfToken": get_token(request)})
+
+
+@require_http_methods(["POST"])
+def signup(request: Any):
+	try:
+		data = json.loads(request.body or b"{}")
+	except json.JSONDecodeError:
+		return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+	email = (data.get("email") or "").strip().lower()
+	password = data.get("password") or ""
+	if not email or not password:
+		return JsonResponse({"error": "Email and password required"}, status=400)
+
+	if User.objects.filter(username=email).exists():
+		return JsonResponse({"error": "Account already exists. Please log in."}, status=409)
+
+	user = User.objects.create_user(username=email, email=email, password=password)
+	login(request, user)
+	UserPreference.objects.get_or_create(user=user)
+	return JsonResponse({"ok": True, "email": email})
+
+
+@require_http_methods(["POST"])
+def login_view(request: Any):
+	try:
+		data = json.loads(request.body or b"{}")
+	except json.JSONDecodeError:
+		return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+	email = (data.get("email") or "").strip().lower()
+	password = data.get("password") or ""
+	if not email or not password:
+		return JsonResponse({"error": "Email and password required"}, status=400)
+
+	user = authenticate(request, username=email, password=password)
+	if user is None:
+		return JsonResponse({"error": "Invalid email or password"}, status=401)
+
+	login(request, user)
+	UserPreference.objects.get_or_create(user=user)
+	return JsonResponse({"ok": True, "email": user.email or email})
+
+
+@require_http_methods(["POST"])
+def logout_view(request: Any):
+	logout(request)
+	return JsonResponse({"ok": True})
+
+
+@require_http_methods(["GET", "PUT"])
+def preferences(request: Any):
+	"""
+	GET: return current preferences.
+	PUT: save preferences.
+
+	If authenticated, preferences are stored in DB per-user.
+	If anonymous, preferences are stored in session.
+	"""
+	if request.method == "GET":
+		if request.user.is_authenticated:
+			pref_obj, _ = UserPreference.objects.get_or_create(user=request.user)
+			return JsonResponse({"preferences": pref_obj.to_dict(), "authenticated": True})
+		return JsonResponse({"preferences": request.session.get("user_prefs", _default_prefs_dict()), "authenticated": False})
+
+	# PUT
+	try:
+		data = json.loads(request.body or b"{}")
+	except json.JSONDecodeError:
+		return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+	prefs = _prefs_from_payload(data)
+
+	if request.user.is_authenticated:
+		pref_obj, _ = UserPreference.objects.get_or_create(user=request.user)
+		pref_obj.dietary = prefs["dietary"]
+		pref_obj.max_price = prefs["maxPrice"]
+		pref_obj.min_rating = prefs["minRating"]
+		pref_obj.adventurousness = prefs["adventurousness"]
+		pref_obj.save()
+		return JsonResponse({"ok": True, "preferences": pref_obj.to_dict(), "authenticated": True})
+
+	request.session["user_prefs"] = prefs
+	request.session.modified = True
+	return JsonResponse({"ok": True, "preferences": prefs, "authenticated": False})
 
 
 @csrf_exempt
