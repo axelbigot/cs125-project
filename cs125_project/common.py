@@ -97,18 +97,95 @@ class UserPreferences:
 	datetime_adventurous_distribution: Dict[int, Dict[float, float]] = field(default_factory=dict)
 	datetime_proximity_miles_distribution: Dict[int, Dict[float, float]] = field(default_factory=dict)
 	datetime_restaurant_style_distribution: Dict[int, Dict[RestaurantStyle, float]] = field(default_factory=dict)
+	
+	def _normalize_distribution(self, dist: Dict[Any, float]) -> Dict[Any, float]:
+		total = float(sum(dist.values())) if dist else 0.0
+		if total <= 0.0:
+			return {}
+		return {k: v / total for k, v in dist.items()}
 
+	def record_mealtime(self, hour: int, mealtime: Mealtime, weight: float = 1.0) -> None:
+		"""
+		Update datetime_mealtime_distribution for a given hour of day and mealtime.
+		hour: 0–23 (local hour bucket)
+		"""
+		if weight <= 0:
+			return
+		bucket = self.datetime_mealtime_distribution.setdefault(int(hour), {})
+		bucket[mealtime] = bucket.get(mealtime, 0.0) + float(weight)
 
-	def update_from_click(self, place):
-		if "types" in place:
-			for t in place["types"]:
-				self.cuisines[t] += 1.0
-		
+	def get_mealtime_distribution(self, hour: int) -> Dict[Mealtime, float]:
+		"""
+		Return normalized probability distribution of mealtimes for a given hour.
+		"""
+		raw = self.datetime_mealtime_distribution.get(int(hour), {})
+		return self._normalize_distribution(raw)
+
+	def record_adventurousness(self, hour: int, adventurous_value: float, weight: float = 1.0) -> None:
+		"""
+		Update datetime_adventurous_distribution for a given hour with an observed adventurousness score.
+		adventurous_value is typically in [1, 5].
+		"""
+		if weight <= 0:
+			return
+		bucket = self.datetime_adventurous_distribution.setdefault(int(hour), {})
+		bucket[float(adventurous_value)] = bucket.get(float(adventurous_value), 0.0) + float(weight)
+
+	def get_expected_adventurousness(self, hour: int) -> Optional[float]:
+		"""
+		Compute the expected adventurousness value for the given hour, or None if unknown.
+		"""
+		raw = self.datetime_adventurous_distribution.get(int(hour), {})
+		if not raw:
+			return None
+		norm = self._normalize_distribution(raw)
+		return sum(value * prob for value, prob in norm.items())
+
+	def record_proximity(self, hour: int, proximity_miles: float, weight: float = 1.0) -> None:
+		"""
+		Update datetime_proximity_miles_distribution with an observed preferred search radius.
+		"""
+		if weight <= 0:
+			return
+		bucket = self.datetime_proximity_miles_distribution.setdefault(int(hour), {})
+		bucket[float(proximity_miles)] = bucket.get(float(proximity_miles), 0.0) + float(weight)
+
+	def get_expected_proximity(self, hour: int) -> Optional[float]:
+		"""
+		Compute the expected preferred search radius (in miles) for the given hour, or None.
+		"""
+		raw = self.datetime_proximity_miles_distribution.get(int(hour), {})
+		if not raw:
+			return None
+		norm = self._normalize_distribution(raw)
+		return sum(radius * prob for radius, prob in norm.items())
+
+	def record_restaurant_style(self, hour: int, style: RestaurantStyle, weight: float = 1.0) -> None:
+		"""
+		Update datetime_restaurant_style_distribution with an observed preferred style.
+		"""
+		if weight <= 0:
+			return
+		bucket = self.datetime_restaurant_style_distribution.setdefault(int(hour), {})
+		bucket[style] = bucket.get(style, 0.0) + float(weight)
+
+	def get_restaurant_style_distribution(self, hour: int) -> Dict[RestaurantStyle, float]:
+		"""
+		Return normalized probability distribution of restaurant styles for the given hour.
+		"""
+		raw = self.datetime_restaurant_style_distribution.get(int(hour), {})
+		return self._normalize_distribution(raw)
+
+	def update_from_click(self, place: Dict[str, Any]) -> None:
+		"""
+		Update coarse-grained preferences from a clicked place document.
+		Currently adjusts price_bias; can be extended to use cuisine types.
+		"""
 		if place.get("price_level") is not None:
 			self.price_bias += (2 - place["price_level"]) * 0.1
-	
-	def dislikes(self, place_id):
-		self.disliked_places.add(place_id)
+
+	def dislikes(self, place_id: str) -> None:
+		self.disliked_places[place_id] = ScoredRestaurant(satisfaction_score=0.0)
 
 @dataclass
 class Feedback:
