@@ -6,12 +6,12 @@ from dotenv import load_dotenv
 
 # Handle imports for both module and script execution
 try:
-    from .preferences import UserPreferences
+    from .common import UserPreferences
     from .recommender import rank_places
     from .ingestion import AugmentedPlacesRepository, Place
 except ImportError:
     # Fallback for when running as script
-    from preferences import UserPreferences
+    from common import UserPreferences
     from recommender import rank_places
     from ingestion import AugmentedPlacesRepository, Place
 

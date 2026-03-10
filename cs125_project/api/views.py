@@ -1,7 +1,6 @@
 from ..common import *
 from ..query_processing import build_request, get_restaurant_recommendations
 from ..recommender import rank_places
-from ..preferences import UserPreferences
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods

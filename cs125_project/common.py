@@ -6,7 +6,8 @@ logging.basicConfig(
 )
 
 from typing import *
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from collections import defaultdict
 from enum import Enum
 
 
@@ -78,29 +79,37 @@ class ScoredCuisine:
 	satisfaction_score: float
 
 @dataclass
-class UserContext:
-	prev_restaurants: Dict[str, ScoredRestaurant]
-	cuisine_preferences: Dict[CuisineType, ScoredCuisine]
+class UserPreferences:
+	cuisine_preferences: Dict[CuisineType, ScoredCuisine] = field(default_factory=dict)
+	price_bias: float = 5
+	min_rating: float = 0.0
+	disliked_places: Dict[str, ScoredRestaurant] = field(default_factory=dict)
+	like_places: Dict[str, ScoredRestaurant] = field(default_factory=dict)
+	dietary: set = field(default_factory=set) # vegan, halal, etc
+	hard_min_price_level: PriceLevel = PriceLevel.PRICE_LEVEL_FREE
+	hard_max_price_level: PriceLevel = PriceLevel.PRICE_LEVEL_VERY_EXPENSIVE
+	
 	# Probability that user wants a certain kind of meal at a certan time of day.
 	# Dict[<time>, Dict<Lunch|Breakfast|...>, <probablity_wants>]
-	datetime_mealtime_distribution: Dict[int, Dict[Mealtime, float]]
-	datetime_destination_distribution: Dict[int, Dict[Tuple[float, float], float]]
-	datetime_price_level_distribution: Dict[int, Dict[PriceLevel, float]]
-	datetime_stars_distribution: Dict[int, Dict[int, float]]
-	datetime_adventurous_distribution: Dict[int, Dict[float, float]]
-	datetime_group_size_distribution: Dict[int, Dict[int, float]]
-	datetime_proximity_miles_distribution: Dict[int, Dict[float, float]]
-	datetime_restaurant_style_distribution: Dict[int, Dict[RestaurantStyle, float]]
-	datetime_dietary_restrictions_distribution: Dict[int, Dict[DietaryRestriction, float]]
+	datetime_mealtime_distribution: Dict[int, Dict[Mealtime, float]] = field(default_factory=dict)
+	datetime_adventurous_distribution: Dict[int, Dict[float, float]] = field(default_factory=dict)
+	datetime_proximity_miles_distribution: Dict[int, Dict[float, float]] = field(default_factory=dict)
+	datetime_restaurant_style_distribution: Dict[int, Dict[RestaurantStyle, float]] = field(default_factory=dict)
 
-	hard_min_price_level: PriceLevel
-	hard_max_price_level: PriceLevel
+
+	def update_from_click(self, place):
+		if "types" in place:
+			for t in place["types"]:
+				self.cuisines[t] += 1.0
+		
+		if place.get("price_level") is not None:
+			self.price_bias += (2 - place["price_level"]) * 0.1
+	
+	def dislikes(self, place_id):
+		self.disliked_places.add(place_id)
 
 @dataclass
 class Feedback:
 	id: str
 	satisfaction_score: float
 
-@dataclass
-class UserPreferences:
-	pass
