@@ -28,7 +28,7 @@ def score_place(place: Place, prefs):
 
     # Cuisine affinity
     for t in (place.types if place.types is not None else []):
-        score += prefs.cuisines.get(t, 0.0)
+        score += prefs.cuisine_preferences.get(t, 0.0)
 
 
     return score
