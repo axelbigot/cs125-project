@@ -306,6 +306,22 @@ class PlaceQueryBuilder:
 		self._order.append('bm25(places_fts, 5.0, 2.0, 1.0, 1.0) ASC')
 		return self
 	
+	def min_rating(self, rating: float) -> 'PlaceQueryBuilder':
+		self._where.append('p.rating >= ?')
+		self._params.append(rating)
+		return self
+	
+	def price_between(self, min_price: int, max_price: int) -> 'PlaceQueryBuilder':
+		self._where.append('p.price_level BETWEEN ? AND ?')
+		self._params.extend([min_price, max_price])
+		return self
+	
+	def exclude_ids(self, ids: list[str]) -> 'PlaceQueryBuilder':
+		placeholders = ','.join(['?'] * len(ids))
+		self._where.append(f'p.id NOT IN ({placeholders})')
+		self._params.extend(ids)
+		return self
+	
 	def select(self, limit: int = 20) -> list[Place]:
 		self._limit = limit
 

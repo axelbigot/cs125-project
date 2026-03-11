@@ -178,13 +178,7 @@ def get_restaurants(request: Any):
 		
 		# Build request object for Google Places API
 		request_obj = build_request(query, user_location=user_location)
-		
-		# Get raw recommendations from Google Places API
-		raw_recommendations = get_restaurant_recommendations(request_obj, query)
-		
-		if not raw_recommendations:
-			return JsonResponse({'restaurants': [], 'message': 'No restaurants found'})
-		
+
 		# Create user preferences from request data
 		prefs = UserPreferences(
 			dietary=set(prefs_data.get('dietary', [])),
@@ -192,6 +186,12 @@ def get_restaurants(request: Any):
 			max_price=int(prefs_data.get('max_price', 4)),
 			adventurousness=prefs_data.get('adventurousness', 'Balanced')
 		)
+		
+		# Get raw recommendations from Google Places API
+		raw_recommendations = get_restaurant_recommendations(request_obj, query, prefs)
+		
+		if not raw_recommendations:
+			return JsonResponse({'restaurants': [], 'message': 'No restaurants found'})
 		
 		# Rank recommendations based on preferences
 		ranked_recommendations = rank_places(raw_recommendations, prefs)

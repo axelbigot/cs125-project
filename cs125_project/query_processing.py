@@ -152,7 +152,7 @@ def build_request(query, user_location=None):
     return request_obj
 
 #Sends a Nearby Search request to Google Places API and returns top N restaurant recommendations.
-def get_restaurant_recommendations(request_obj, query: str, api_key=GOOGLE_API_KEY, top_n=NUM_RECOMMENDATIONS) -> list[Place]:
+def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferences, api_key=GOOGLE_API_KEY, top_n=NUM_RECOMMENDATIONS) -> list[Place]:
     params = request_obj.copy()
     if "location" in params:
         if isinstance(params["location"], tuple):
@@ -164,6 +164,11 @@ def get_restaurant_recommendations(request_obj, query: str, api_key=GOOGLE_API_K
     else:
         lat = 33.645963
         lng = -117.842825
+
+    print(request_obj)
+    print(query)
+    print(prefs)
+
     places = places_repo.query_builder() \
         .within_radius(params['radius'], lat, lng) \
         .order_by_text_relevance(extract_keywords(query).split()) \
