@@ -27,8 +27,8 @@ def score_place(place: Place, prefs: UserPreferences, lat, lng):
         score += prefs.price_bias * (4.0 - place.price_level)
 
     for t in (place.types or []):
-        if t in prefs.cuisine_preferences:
-            score += prefs.cuisine_preferences[t].satisfaction_score
+        if t in prefs.cuisines:
+            score += prefs.cuisines[t].satisfaction_score
     
     if place.id in prefs.like_places:
         W = 5.0

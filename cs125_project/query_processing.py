@@ -170,7 +170,7 @@ def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferenc
     builder = places_repo.query_builder()
 
     builder = builder.within_radius(params['radius'], lat, lng)
-    builder = builder.price_between(prefs.hard_min_price_level.value - 1, prefs.hard_max_price_level.value - 1)
+    builder = builder.price_between(prefs.hard_min_price_level.value - 1, min(prefs.hard_max_price_level.value - 1, prefs.max_price))
     builder = builder.min_rating(prefs.min_rating)
 
     hour = datetime.now().hour

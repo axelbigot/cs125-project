@@ -123,6 +123,8 @@ def preferences(request: Any):
 
 	prefs = _prefs_from_payload(data)
 
+	print(request.user.is_authenticated)
+
 	if request.user.is_authenticated:
 		pref_obj, _ = UserPreference.objects.get_or_create(user=request.user)
 		pref_obj.dietary = prefs["dietary"]
