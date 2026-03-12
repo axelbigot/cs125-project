@@ -173,11 +173,20 @@ def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferenc
     builder = builder.price_between(prefs.hard_min_price_level.value - 1, min(prefs.hard_max_price_level.value - 1, prefs.max_price))
     builder = builder.min_rating(prefs.min_rating)
 
+    keywords = extract_keywords(query).split()
+
+    if 'Vegetarian' in prefs.dietary:
+        builder = builder.require_type('vegetarian_restaurant')
+    elif 'Vegan' in prefs.dietary:
+        builder = builder.require_type('vegan_restaurant')
+    elif 'Gluten Free' in prefs.dietary:
+        keywords.extend(['gluten', 'gluten-free', 'gluten free'])
+
     hour = datetime.now().hour
     radius = prefs.get_expected_proximity(hour) or 5
 
     print('HELLO')
-    builder = builder.relevance_by(extract_keywords(query).split())
+    builder = builder.relevance_by(keywords)
     #builder.exclude_ids(prefs.disliked_places or [])
 
     places = builder.select(limit=50)

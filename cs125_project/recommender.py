@@ -38,21 +38,35 @@ def score_place(place: Place, prefs: UserPreferences, lat, lng):
             # Already visited
             W = -3.0
 
-        score += prefs.like_places[place.id].satisfaction_score * 10
+        score += prefs.like_places[place.id].satisfaction_score * W
 
     if place.id in prefs.disliked_places:
         score -= 50
 
     if prefs.adventurousness == 'Safe':
-        score += place.rating * 0.5
+        score += place.rating * 5
     elif prefs.adventurousness == 'Experimental':
-        score += len(place.types or []) * 0.3
+        score += len(place.types or []) * 10
 
     if lat is not None and lng is not None and place.lat is not None and place.lng is not None:
         distance_miles = haversine_distance(lat, lng, place.lat, place.lng)
         score += max(0, 10 - distance_miles)
 
-    score += place.relevance * -3
+    if prefs.adventurousness == 'Safe':
+        W = 100
+    elif prefs.adventurousness == 'Experimental':
+        W = 1
+    else:
+        W = 3
+    # score += (100 + place.relevance) * W
+    score += place.relevance * -1 * W
+
+    for t in place.types:
+        if 'fusion' in t:
+            if prefs.adventurousness == 'Safe':
+                score -= 100
+            elif prefs.adventurousness == 'Experimental':
+                score += 100
 
     return score
 

@@ -330,6 +330,11 @@ class PlaceQueryBuilder:
 		self._params.extend(ids)
 		return self
 	
+	def require_type(self, type: str) -> 'PlaceQueryBuilder':
+		self._where.append(f'p.types LIKE ?')
+		self._params.append(f'%"{type}"%')
+		return self
+	
 	def select(self, limit: int = 20) -> list[Place]:
 		self._limit = limit
 
