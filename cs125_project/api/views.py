@@ -19,6 +19,8 @@ def _default_prefs_dict() -> dict:
 		"maxPrice": 4,
 		"minRating": 0,
 		"adventurousness": "Balanced",
+		"priceBias": 5.0,
+		"cuisines": {},
 	}
 
 
@@ -28,12 +30,16 @@ def _prefs_from_payload(data: dict) -> dict:
 		return prefs
 	if isinstance(data.get("dietary"), list):
 		prefs["dietary"] = [str(x) for x in data.get("dietary", [])]
-	if data.get("maxPrice") is not None:
-		prefs["maxPrice"] = int(data["maxPrice"])
-	if data.get("minRating") is not None:
-		prefs["minRating"] = int(data["minRating"])
+	if data.get("maxPrice") is not None or data.get("max_price") is not None:
+		prefs["maxPrice"] = int(data.get("maxPrice") or data.get("max_price", 4))
+	if data.get("minRating") is not None or data.get("min_rating") is not None:
+		prefs["minRating"] = float(data.get("minRating") or data.get("min_rating", 0))
 	if data.get("adventurousness") is not None:
 		prefs["adventurousness"] = str(data["adventurousness"])
+	if data.get("priceBias") is not None or data.get("price_bias") is not None:
+		prefs["priceBias"] = float(data.get("priceBias") or data.get("price_bias", 5.0))
+	if isinstance(data.get("cuisines"), dict):
+		prefs["cuisines"] = {str(k): float(v) for k, v in data["cuisines"].items()}
 	return prefs
 
 
@@ -123,6 +129,8 @@ def preferences(request: Any):
 		pref_obj.max_price = prefs["maxPrice"]
 		pref_obj.min_rating = prefs["minRating"]
 		pref_obj.adventurousness = prefs["adventurousness"]
+		pref_obj.price_bias = prefs["priceBias"]
+		pref_obj.cuisines = prefs["cuisines"]
 		pref_obj.save()
 		return JsonResponse({"ok": True, "preferences": pref_obj.to_dict(), "authenticated": True})
 
@@ -185,13 +193,21 @@ def get_restaurants(request: Any):
 		if not raw_recommendations:
 			return JsonResponse({'restaurants': [], 'message': 'No restaurants found'})
 		
-		# Create user preferences from request data
-		prefs = UserPreferences(
-			dietary=set(prefs_data.get('dietary', [])),
-			min_rating=float(prefs_data.get('min_rating', 0.0)),
-			max_price=int(prefs_data.get('max_price', 4)),
-			adventurousness=prefs_data.get('adventurousness', 'Balanced')
-		)
+		# Retrieve preferences: from DB if authenticated, else session; merge request overrides
+		if request.user.is_authenticated:
+			pref_obj, _ = UserPreference.objects.get_or_create(user=request.user)
+			base = pref_obj.to_dict()
+		else:
+			base = request.session.get("user_prefs", _default_prefs_dict()) or _default_prefs_dict()
+		# Merge request prefs over base (request overrides); supports camelCase and snake_case
+		merged = dict(base)
+		override_map = {"max_price": "maxPrice", "min_rating": "minRating", "price_bias": "priceBias"}
+		for k, v in (prefs_data or {}).items():
+			if v is not None and k in ("dietary", "maxPrice", "minRating", "adventurousness", "priceBias", "cuisines"):
+				merged[k] = v
+			elif v is not None and k in override_map:
+				merged[override_map[k]] = v
+		prefs = UserPreferences.from_dict(merged)
 		
 		# Rank recommendations based on preferences
 		ranked_recommendations = rank_places(raw_recommendations, prefs)
