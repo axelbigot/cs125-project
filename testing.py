@@ -1,18 +1,12 @@
 import os
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cs125_project.settings")
 
 import django
-
 django.setup()
 
-from django.contrib.auth.models import User  # noqa: E402
-
-from cs125_project.common import (  # noqa: E402
-	UserPreferences,
-	Mealtime,
-	RestaurantStyle,
-)
+from django.contrib.auth.models import User 
+from cs125_project.common import UserPreferences, Mealtime, RestaurantStyle
+from cs125_project.api.models import UserPreference 
 
 
 def main() -> None:
@@ -25,9 +19,11 @@ def main() -> None:
 		print(f"No user with username={username!r} found; skipping DB preference check.")
 	except AttributeError:
 		print(f"User {username!r} has no attached preferences yet.")
+	print('--------------------------------------------------------------')
 
-	# Create an in-memory UserPreferences instance and exercise the new methods
-	prefs = UserPreferences()
+	# Get user's preferences and exercise the record/get methods
+	pref_obj, _ = UserPreference.objects.get_or_create(user=u)
+	prefs = pref_obj.to_user_preferences()
 
 	# Record a few events
 	prefs.record_mealtime(hour=12, mealtime=Mealtime.LUNCH)
@@ -49,6 +45,10 @@ def main() -> None:
 	print("Expected adventurousness @18:", prefs.get_expected_adventurousness(18))
 	print("Expected proximity @9:", prefs.get_expected_proximity(9))
 	print("Style dist @20:", prefs.get_restaurant_style_distribution(20))
+
+	print('--------------------------------------------------------------')
+
+	print(prefs)
 
 
 if __name__ == "__main__":

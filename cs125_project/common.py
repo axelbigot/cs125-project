@@ -80,14 +80,16 @@ class ScoredCuisine:
 
 @dataclass
 class UserPreferences:
-	cuisine_preferences: Dict[CuisineType, ScoredCuisine] = field(default_factory=dict)
+	"""Single canonical preferences object used across ranking, API, and DB."""
+	# Dict[place_type_str, score] for recommender cuisine affinity
+	cuisines: Dict[str, float] = field(default_factory=dict)
 	price_bias: float = 3
 	max_price: int = 4
 	min_rating: float = 0.0
 	adventurousness: str = "Balanced"
 	disliked_places: Dict[str, ScoredRestaurant] = field(default_factory=dict)
 	like_places: Dict[str, ScoredRestaurant] = field(default_factory=dict)
-	dietary: set = field(default_factory=set) # vegan, halal, etc
+	dietary: set = field(default_factory=set)  # e.g. {"vegan_restaurant", "halal"}
 	hard_min_price_level: PriceLevel = PriceLevel.PRICE_LEVEL_FREE
 	hard_max_price_level: PriceLevel = PriceLevel.PRICE_LEVEL_VERY_EXPENSIVE
 	
@@ -186,6 +188,27 @@ class UserPreferences:
 
 	def dislikes(self, place_id: str) -> None:
 		self.disliked_places[place_id] = ScoredRestaurant(satisfaction_score=0.0)
+
+	@classmethod
+	def from_dict(cls, d: dict) -> "UserPreferences":
+		"""Build UserPreferences from API/session dict. Supports camelCase and snake_case."""
+		if not isinstance(d, dict):
+			return cls()
+		dietary_raw = d.get("dietary") or d.get("dietary_restrictions") or []
+		dietary = set(str(x) for x in dietary_raw) if isinstance(dietary_raw, (list, set)) else set()
+		max_price = d.get("maxPrice") or d.get("max_price")
+		min_rating = d.get("minRating") or d.get("min_rating")
+		price_bias = d.get("priceBias") or d.get("price_bias")
+		cuisines_raw = d.get("cuisines") or d.get("cuisine_affinity") or {}
+		cuisines = {str(k): float(v) for k, v in (cuisines_raw or {}).items()} if isinstance(cuisines_raw, dict) else {}
+		return cls(
+			dietary=dietary,
+			max_price=int(max_price) if max_price is not None else 4,
+			min_rating=float(min_rating) if min_rating is not None else 0.0,
+			adventurousness=str(d.get("adventurousness", "Balanced") or "Balanced"),
+			price_bias=float(price_bias) if price_bias is not None else 5.0,
+			cuisines=cuisines,
+		)
 
 @dataclass
 class Feedback:
