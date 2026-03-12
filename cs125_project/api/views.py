@@ -154,6 +154,8 @@ def get_restaurants(request: Any):
 			try:
 				data = json.loads(request.body)
 				query = data.get('query', '')
+
+				print(f'Query: "{query}"')
 				lat = data.get('lat')
 				lng = data.get('lng')
 				prefs_data = data.get('preferences', {})
@@ -215,4 +217,5 @@ def get_restaurants(request: Any):
 		return JsonResponse({'restaurants': formatted_restaurants})
 	
 	except Exception as e:
-		return JsonResponse({'error': str(e)}, status=500)
+		raise
+		# return JsonResponse({'error': str(e)}, status=500)

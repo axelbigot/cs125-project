@@ -1,35 +1,40 @@
 try:
     from .ingestion import Place
+    from .common import UserPreferences
 except ImportError:
     from ingestion import Place
+    from common import UserPreferences
 
-def score_place(place: Place, prefs):
-    # Hard constraints
-    if place.rating and place.rating < prefs.min_rating:
-        return float("-inf")
-    
-    if place.price_level and place.price_level > prefs.max_price:
-        return float("-inf")
-
-    if prefs.dietary:
-        if not prefs.dietary.intersection(set(place.types if place.types is not None else [])):
-            return float("-inf")
-            
+def score_place(place: Place, prefs: UserPreferences):
     score = 0.0
 
-    # Rating
-    if place.rating is not None:
-        score += place.rating
-
+    if place.rating:
+        score += place.rating * 2.0
+    
     if place.price_level is not None:
-        # Assume price_level is 0 (cheap) to N (expensive)
-        PRICE_WEIGHT = 100.0  # Large to dominate scoring
-        score += PRICE_WEIGHT * prefs.price_bias * place.price_level
+        score += prefs.price_bias * (4.0 - place.price_level)
 
-    # Cuisine affinity
-    for t in (place.types if place.types is not None else []):
-        score += prefs.cuisine_preferences.get(t, 0.0)
+    for t in (place.types or []):
+        if t in prefs.cuisine_preferences:
+            score += prefs.cuisine_preferences[t].satisfaction_score
+    
+    if place.id in prefs.like_places:
+        W = 5.0
+        if prefs.adventurousness == 'Safe':
+            W = 10.0
+        elif prefs.adventurousness == 'Experimental':
+            # Already visited
+            W = -3.0
 
+        score += prefs.like_places[place.id].satisfaction_score * 10
+
+    if place.id in prefs.disliked_places:
+        score -= 50
+
+    if prefs.adventurousness == 'Safe':
+        score += place.rating * 0.5
+    elif prefs.adventurousness == 'Experimental':
+        score += len(place.types or []) * 0.3
 
     return score
 

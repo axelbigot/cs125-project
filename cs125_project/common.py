@@ -13,30 +13,30 @@ from enum import Enum
 
 # Maybe use Google Places types directly?
 class DietaryRestriction(Enum):
-	PEANUTS = 1,
-	LACTOSE = 2,
+	PEANUTS = 1
+	LACTOSE = 2
 	# ...
 
 # Maybe use Google Places types directly?
 class RestaurantStyle(Enum):
-	SIT_DOWN = 1,
-	CAFE = 2,
+	SIT_DOWN = 1
+	CAFE = 2
 	CASUAL = 3
 	# ...
 
 # Maybe use Google Places types directly?
 class Mealtime(Enum):
-	BREAKFAST = 1,
-	LUNCH = 2,
-	DINNER = 3,
+	BREAKFAST = 1
+	LUNCH = 2
+	DINNER = 3
 	# ...
 
 # Maybe use Google Places types directly?
 class PriceLevel(Enum):
-	PRICE_LEVEL_FREE = 1,
-	PRICE_LEVEL_INEXPENSIVE = 2,
-	PRICE_LEVEL_MODERATE = 3,
-	PRICE_LEVEL_EXPENSIVE = 4,
+	PRICE_LEVEL_FREE = 1
+	PRICE_LEVEL_INEXPENSIVE = 2
+	PRICE_LEVEL_MODERATE = 3
+	PRICE_LEVEL_EXPENSIVE = 4
 	PRICE_LEVEL_VERY_EXPENSIVE = 5
 
 # Maybe use Google Places types directly?

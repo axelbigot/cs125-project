@@ -542,7 +542,9 @@ const App = () => {
 
   // API call to fetch restaurants on search query
   const handleSearch = async (query) => {
-    if (!query.trim()) return;
+    if (query === null)
+      query = ' '
+    else if (!query.trim()) return;
     setIsLoading(true);
     
     try {
@@ -623,7 +625,7 @@ const App = () => {
           // After saving preferences, immediately fetch recommendations
           // using a generic query so the user doesn't land on an empty state.
           try {
-            await handleSearch('restaurants');
+            await handleSearch(null);
           } catch (e) {
             // ignore
           }

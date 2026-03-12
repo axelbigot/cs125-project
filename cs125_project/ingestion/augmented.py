@@ -98,18 +98,6 @@ class AugmentedPlacesRepository:
 			row_dict['types'] = json.loads(row_dict['types']) if row_dict.get('types') else None
 			row_dict['hours'] = json.loads(row_dict['hours']) if row_dict.get('hours') else None
 
-			pls = ['PRICE_LEVEL_FREE', 
-            'PRICE_LEVEL_INEXPENSIVE', 
-            'PRICE_LEVEL_MODERATE', 
-            'PRICE_LEVEL_EXPENSIVE', 
-            'PRICE_LEVEL_VERY_EXPENSIVE']
-			if row_dict['price_level'] in pls:
-				pl = pls.index(row_dict['price_level'])
-			else:
-				pl = None
-			
-			row_dict['price_level'] = pl
-
 			places.append(Place(**row_dict))
 
 		return places
@@ -209,6 +197,17 @@ class AugmentedPlacesRepository:
 		conn.commit()
 
 	def _massage(self, place):
+		pls = ['PRICE_LEVEL_FREE', 
+            'PRICE_LEVEL_INEXPENSIVE', 
+            'PRICE_LEVEL_MODERATE', 
+            'PRICE_LEVEL_EXPENSIVE', 
+            'PRICE_LEVEL_VERY_EXPENSIVE']
+		raw_pl = self._get(place, 'priceLevel')
+		if raw_pl in pls:
+			pl = pls.index(raw_pl)
+		else:
+			pl = None
+			
 		filtered = {
 			'id': self._get(place, 'id'),
 			'types': self._get(place, 'types'),
@@ -222,7 +221,7 @@ class AugmentedPlacesRepository:
 			'website': self._get(place, 'websiteUri'),
 			'hours': self._get(place, 'regularOpeningHours', 'periods'),
 			'timezone_offset': self._get(place, 'utcOffsetMinutes'),
-			'price_level': self._get(place, 'priceLevel'),
+			'price_level': pl,
 			'rating_count': self._get(place, 'userRatingCount'),
 			'name': self._get(place, 'displayName', 'text'),
 			'label': self._get(place, 'primaryTypeDisplayName', 'text'),

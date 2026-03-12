@@ -2,6 +2,7 @@ import re
 import os
 import requests
 from dotenv import load_dotenv
+from datetime import datetime
 
 
 # Handle imports for both module and script execution
@@ -48,13 +49,13 @@ DISTANCE_REGEX = r'(\d+)\s*(mile|km|m|meter|meters)'
 # Open now keywords
 OPEN_NOW_KEYWORDS = ["open now", "currently open"]
 
-places_repo = AugmentedPlacesRepository()
+places_repo = AugmentedPlacesRepository()#force_migrate=True)
 
 def extract_keywords(query):
     # Remove punctuation
     query_clean = re.sub(r'[^\w\s]', '', query)
     keywords = [word.lower() for word in query_clean.split() if word.lower() not in STOPWORDS]
-    return " ".join(keywords) if keywords else None
+    return " ".join(keywords) if keywords else ""
 
 def extract_type(query):
     query_lower = query.lower()
@@ -166,13 +167,24 @@ def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferenc
         lng = -117.842825
 
     print(request_obj)
-    print(query)
+    print(f'Query2: "{query}"')
     print(prefs)
 
-    places = places_repo.query_builder() \
-        .within_radius(params['radius'], lat, lng) \
-        .order_by_text_relevance(extract_keywords(query).split()) \
-        .select()
+    builder = places_repo.query_builder()
+
+    builder.within_radius(params['radius'], lat, lng)
+    builder.price_between(prefs.hard_min_price_level.value - 1, prefs.hard_max_price_level.value - 1)
+    builder.min_rating(prefs.min_rating)
+
+    hour = datetime.now().hour
+    radius = prefs.get_expected_proximity(hour) or 5
+
+    builder.order_by_text_relevance(extract_keywords(query).split())
+    #builder.exclude_ids(prefs.disliked_places or [])
+
+    places = builder.select(limit=50)
+
+    print([p.price_level for p in places])
     
     return places
 
