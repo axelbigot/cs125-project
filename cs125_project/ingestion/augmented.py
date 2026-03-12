@@ -38,6 +38,7 @@ class Place:
 	reviews_uri: Optional[str]
 	types: Optional[List[str]]
 	hours: Optional[Any]
+	relevance: Optional[float]
 
 class AugmentedPlacesRepository:
 	def __init__(self, conn_loc: str = 'places.db', raw_data: RawDataRepository = None, force_migrate: bool = False):
@@ -269,6 +270,7 @@ class PlaceQueryBuilder:
 		self._where = []
 		self._params = []
 		self._order = []
+		self._fields = ['p.*']
 		self._limit = None
 
 	def within_radius(self, meters: float, lat: float, lng: float) -> 'PlaceQueryBuilder':
@@ -288,15 +290,22 @@ class PlaceQueryBuilder:
 
 		return self
 	
-	def order_by_text_relevance(self, tokens: list[str]) -> 'PlaceQueryBuilder':
+	def relevance_by(self, tokens: list[str]) -> 'PlaceQueryBuilder':
 		quoted = [f'"{t}"' for t in tokens]
 		query = " OR ".join(quoted)
 
 		if not query:
+			self._fields.append('1 AS relevance')
 			return self
 		
 		self._joins.append(
 			'JOIN places_fts ON p.rowid = places_fts.rowid'
+		)
+
+		print(self._joins)
+
+		self._fields.append(
+			'bm25(places_fts, 5.0, 2.0, 1.0, 1.0) AS relevance'
 		)
 
 		self._where.append('places_fts MATCH ?')
@@ -324,7 +333,7 @@ class PlaceQueryBuilder:
 	def select(self, limit: int = 20) -> list[Place]:
 		self._limit = limit
 
-		sql = ['SELECT p.* FROM places p']
+		sql = [f'SELECT {", ".join(self._fields)} FROM places p']
 
 		if self._joins:
 			sql.extend(self._joins)

@@ -196,11 +196,11 @@ def get_restaurants(request: Any):
 			return JsonResponse({'restaurants': [], 'message': 'No restaurants found'})
 		
 		# Rank recommendations based on preferences
-		ranked_recommendations = rank_places(raw_recommendations, prefs)
+		ranked_recommendations = rank_places(raw_recommendations, prefs, lat, lng)
 		
 		# Format response for frontend
 		formatted_restaurants = []
-		for idx, place in enumerate(ranked_recommendations):
+		for idx, place in enumerate(ranked_recommendations[:20]):
 			formatted_place = {
 				'id': place.id,
 				'name': place.name,

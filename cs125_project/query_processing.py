@@ -155,13 +155,10 @@ def build_request(query, user_location=None):
 #Sends a Nearby Search request to Google Places API and returns top N restaurant recommendations.
 def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferences, api_key=GOOGLE_API_KEY, top_n=NUM_RECOMMENDATIONS) -> list[Place]:
     params = request_obj.copy()
-    if "location" in params:
-        if isinstance(params["location"], tuple):
-            params["location"] = f"{params['location'][0]},{params['location'][1]}"
 
-    if 0: # location extraction not working for me
-        lat = float(params['location'][0])
-        lng = float(params['location'][1])
+    if 'lat' in params and 'lng' in params: # location extraction not working for me
+        lat = float(params['lat'])
+        lng = float(params['lng'])
     else:
         lat = 33.645963
         lng = -117.842825
@@ -172,19 +169,20 @@ def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferenc
 
     builder = places_repo.query_builder()
 
-    builder.within_radius(params['radius'], lat, lng)
-    builder.price_between(prefs.hard_min_price_level.value - 1, prefs.hard_max_price_level.value - 1)
-    builder.min_rating(prefs.min_rating)
+    builder = builder.within_radius(params['radius'], lat, lng)
+    builder = builder.price_between(prefs.hard_min_price_level.value - 1, prefs.hard_max_price_level.value - 1)
+    builder = builder.min_rating(prefs.min_rating)
 
     hour = datetime.now().hour
     radius = prefs.get_expected_proximity(hour) or 5
 
-    builder.order_by_text_relevance(extract_keywords(query).split())
+    print('HELLO')
+    builder = builder.relevance_by(extract_keywords(query).split())
     #builder.exclude_ids(prefs.disliked_places or [])
 
     places = builder.select(limit=50)
 
-    print([p.price_level for p in places])
+    print([p.relevance for p in places])
     
     return places
 

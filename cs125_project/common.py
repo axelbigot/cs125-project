@@ -81,7 +81,7 @@ class ScoredCuisine:
 @dataclass
 class UserPreferences:
 	cuisine_preferences: Dict[CuisineType, ScoredCuisine] = field(default_factory=dict)
-	price_bias: float = 5
+	price_bias: float = 3
 	max_price: int = 4
 	min_rating: float = 0.0
 	adventurousness: str = "Balanced"

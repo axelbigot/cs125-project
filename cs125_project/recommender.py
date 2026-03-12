@@ -5,7 +5,19 @@ except ImportError:
     from ingestion import Place
     from common import UserPreferences
 
-def score_place(place: Place, prefs: UserPreferences):
+from math import radians, cos, sin, sqrt, atan2
+
+
+def haversine_distance(lat1, lng1, lat2, lng2):
+    # https://en.wikipedia.org/wiki/Haversine_formula
+    R = 3958.8
+    dlat = radians(lat2 - lat1)
+    dlng = radians(lng2 - lng1)
+    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlng/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return R * c
+
+def score_place(place: Place, prefs: UserPreferences, lat, lng):
     score = 0.0
 
     if place.rating:
@@ -36,12 +48,18 @@ def score_place(place: Place, prefs: UserPreferences):
     elif prefs.adventurousness == 'Experimental':
         score += len(place.types or []) * 0.3
 
+    if lat is not None and lng is not None and place.lat is not None and place.lng is not None:
+        distance_miles = haversine_distance(lat, lng, place.lat, place.lng)
+        score += max(0, 10 - distance_miles)
+
+    score += place.relevance * -3
+
     return score
 
 
-def rank_places(places: list[Place], prefs):
+def rank_places(places: list[Place], prefs, lat, lng):
     return sorted(
         places,
-        key=lambda p: score_place(p, prefs),
+        key=lambda p: score_place(p, prefs, lat, lng),
         reverse=True
     )
