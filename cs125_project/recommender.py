@@ -41,7 +41,7 @@ def score_place(place: Place, prefs: UserPreference, lat, lng):
         score += W
 
     if place.id in prefs.disliked_places:
-        score -= 50
+        score -= 5
 
     if prefs.adventurousness == 'Safe':
         score += place.rating * 5
