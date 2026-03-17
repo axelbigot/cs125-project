@@ -5,7 +5,7 @@ import django
 django.setup()
 
 from django.contrib.auth.models import User 
-from cs125_project.common import UserPreferences, Mealtime, RestaurantStyle
+from cs125_project.common import Mealtime, RestaurantStyle
 from cs125_project.api.models import UserPreference 
 
 

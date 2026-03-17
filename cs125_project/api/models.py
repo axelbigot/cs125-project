@@ -12,6 +12,8 @@ class UserPreference(models.Model):
 	adventurousness = models.CharField(max_length=32, default="Balanced")
 	price_bias = models.FloatField(default=5.0)
 	cuisines = models.JSONField(default=dict, blank=True)  # {place_type: score}
+	liked_places = models.JSONField(default=list, blank=True)
+	disliked_places = models.JSONField(default=list, blank=True)
 
 	updated_at = models.DateTimeField(auto_now=True)
 
@@ -28,6 +30,6 @@ class UserPreference(models.Model):
 
 	def to_user_preferences(self):
 		"""Return a common.UserPreferences instance for use in ranking."""
-		from ..common import UserPreferences
-		return UserPreferences.from_dict(self.to_dict())
+		from ..api.models import UserPreference
+		return UserPreference.from_dict(self.to_dict())
 

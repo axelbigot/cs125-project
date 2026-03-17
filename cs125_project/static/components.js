@@ -42,9 +42,21 @@ const apiFetch = async (url, options = {}) => {
   });
 };
 
+const sendLike = async (placeId) => {
+  return apiFetch(`/api/${placeId}/like`, {
+    method: 'POST',
+  });
+};
+
+const sendDislike = async (placeId) => {
+  return apiFetch(`/api/${placeId}/dislike`, {
+    method: 'POST',
+  });
+};
+
 /* START PAGE */
 const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLoggedIn }) => {
-  
+
   // Initialize user preferences
   const [prefs, setPrefs] = useState(initialPrefs || {
     dietary: [],
@@ -67,8 +79,8 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
   const handleDietaryToggle = (diet) => {
     setPrefs(prev => ({
       ...prev,
-      dietary: prev.dietary.includes(diet) 
-        ? prev.dietary.filter(d => d !== diet) 
+      dietary: prev.dietary.includes(diet)
+        ? prev.dietary.filter(d => d !== diet)
         : [...prev.dietary, diet]
     }));
   };
@@ -76,19 +88,18 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 overflow-hidden">
-        
+
         {/* Header Section */}
         <div className="flex justify-between items-center mb-1">
           <h2 className="text-2xl font-black tracking-tight uppercase">Welcome</h2>
-          
-          <button 
-            onClick={isLoggedIn ? null : onSignUpClick} 
-            disabled={isLoggedIn} 
-            className={`font-black tracking-widest uppercase px-4 py-1 rounded-xl transition-colors mt-2 ${
-              isLoggedIn 
-                ? 'bg-gray-100 text-gray-400 cursor-default' 
-                : 'bg-black text-white hover:bg-gray-800'   
-            }`}
+
+          <button
+            onClick={isLoggedIn ? null : onSignUpClick}
+            disabled={isLoggedIn}
+            className={`font-black tracking-widest uppercase px-4 py-1 rounded-xl transition-colors mt-2 ${isLoggedIn
+                ? 'bg-gray-100 text-gray-400 cursor-default'
+                : 'bg-black text-white hover:bg-gray-800'
+              }`}
           >
             {isLoggedIn ? 'Logged In' : 'Sign Up'}
           </button>
@@ -104,11 +115,10 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
               <button
                 key={diet}
                 onClick={() => handleDietaryToggle(diet)}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                  prefs.dietary.includes(diet) 
-                    ? 'bg-black text-white' 
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${prefs.dietary.includes(diet)
+                    ? 'bg-black text-white'
                     : 'bg-gray-100 text-black hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 {diet}
               </button>
@@ -124,16 +134,15 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
               <button
                 key={price}
                 onClick={() => handleThresholdToggle('maxPrice', price)}
-                className={`flex-1 py-2 rounded-lg font-bold transition-all ${
-                  prefs.maxPrice >= price ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
-                }`}
+                className={`flex-1 py-2 rounded-lg font-bold transition-all ${prefs.maxPrice >= price ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
+                  }`}
               >
                 {'$'.repeat(price)}
               </button>
             ))}
           </div>
         </div>
-        
+
         {/* Min Rating */}
         <div className="mb-6">
           <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Min Ratings</label>
@@ -142,9 +151,8 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
               <button
                 key={star}
                 onClick={() => handleThresholdToggle('minRating', star)}
-                className={`flex-1 py-2 rounded-lg font-bold transition-all ${
-                  prefs.minRating >= star ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
-                }`}
+                className={`flex-1 py-2 rounded-lg font-bold transition-all ${prefs.minRating >= star ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
+                  }`}
               >
                 ★
               </button>
@@ -161,11 +169,10 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
                 key={level}
                 type="button"
                 onClick={() => setPrefs({ ...prefs, adventurousness: level })}
-                className={`flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
-                  prefs.adventurousness === level
+                className={`flex-1 py-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${prefs.adventurousness === level
                     ? 'bg-black text-white'
                     : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 {level}
               </button>
@@ -174,7 +181,7 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
         </div>
 
         {/* Submit Button */}
-        <button 
+        <button
           onClick={() => {
             onSave(prefs);
             onClose();
@@ -199,17 +206,17 @@ const SignUpPage = ({ isOpen, onClose, onSignUp }) => {
     e.preventDefault();
     // TODO: Implement actual database connection/authentication here
     console.log('add to database (to be implemented):', { email, password });
-   
+
     onSignUp({ email, password });
     onClose();
-  };  
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative overflow-hidden">
-        
+
         {/* Close Button */}
-        <button 
+        <button
           onClick={onClose}
           className="absolute top-6 right-6 text-gray-400 hover:text-black transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,7 +251,7 @@ const SignUpPage = ({ isOpen, onClose, onSignUp }) => {
             />
           </div>
 
-          <button 
+          <button
             type="submit"
             className="w-full bg-black text-white font-black tracking-widest uppercase py-4 rounded-xl hover:bg-gray-800 transition-colors mt-4"
           >
@@ -257,7 +264,7 @@ const SignUpPage = ({ isOpen, onClose, onSignUp }) => {
 }
 
 /* SIDEBAR */
-const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect }) => {
+const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect, onLike, onDislike }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [inputValue, setInputValue] = useState('');
 
@@ -277,12 +284,12 @@ const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect }) => 
 
   return (
     <div className="w-1/3 max-w-sm h-full bg-white border-r border-gray-200 shadow-[20px_0_40px_rgba(0,0,0,0.05)] z-10 flex flex-col">
-      
+
       {/* Search Header */}
       <div className="p-6 border-b border-gray-100 bg-white sticky top-0 z-20">
         <h1 className="text-2xl font-black text-black tracking-tighter uppercase">Restaurant</h1>
         <h1 className="text-2xl font-black text-black tracking-tighter uppercase">Recommender</h1>
-        
+
         <form onSubmit={handleSearch} className="relative mt-6">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,36 +306,34 @@ const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect }) => 
             disabled={isLoading}
           />
         </form>
-        
+
         <p className="text-xs font-bold text-gray-400 mt-4 uppercase tracking-widest">
-            {restaurants.length} {'Results'}
+          {restaurants.length} {'Results'}
         </p>
       </div>
 
       {/* Restaurant List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {restaurants.map((r) => (
-          <div 
-            key={r.id} 
+          <div
+            key={r.id}
             onClick={() => onSelect(r.id)}
-            className={`p-4 rounded-2xl cursor-pointer transition-all duration-300 ${
-              selectedId === r.id 
-                ? 'bg-black text-white shadow-xl transform scale-[1.02]' 
+            className={`p-4 rounded-2xl cursor-pointer transition-all duration-300 ${selectedId === r.id
+                ? 'bg-black text-white shadow-xl transform scale-[1.02]'
                 : 'bg-white border border-gray-100 text-black hover:border-gray-300 hover:shadow-md'
-            }`}
+              }`}
           >
             <div className="flex justify-between items-start">
               <div className="pr-4">
                 <h3 className={`font-black text-lg leading-tight tracking-tight ${selectedId === r.id ? 'text-white' : 'text-black'}`}>
-                    {r.name}
+                  {r.name}
                 </h3>
                 <p className={`text-xs mt-1.5 font-medium ${selectedId === r.id ? 'text-gray-400' : 'text-gray-500'}`}>
                   {r.vicinity}
                 </p>
               </div>
-              <span className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-md font-bold ${
-                selectedId === r.id ? 'bg-white text-black' : 'bg-gray-200 text-black'
-              }`}>
+              <span className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-md font-bold ${selectedId === r.id ? 'bg-white text-black' : 'bg-gray-200 text-black'
+                }`}>
                 {r.rating} ★
               </span>
             </div>
@@ -336,6 +341,50 @@ const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect }) => 
               <span className={`font-bold px-2 py-1 rounded bg-transparent ${selectedId === r.id ? 'text-white' : 'text-black'}`}>
                 {r.price}
               </span>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onLike(r.id);
+
+                  // toggle state in UI
+                  r.liked = !r.liked;
+                  r.disliked = false;
+
+                  e.currentTarget.classList.toggle('bg-green-600', r.liked);
+                  e.currentTarget.classList.toggle('text-white', r.liked);
+
+                  const dislikeBtn = e.currentTarget.nextSibling;
+                  dislikeBtn.classList.remove('bg-red-600', 'text-white');
+                }}
+                className={`flex-1 py-2 rounded-lg font-bold ${
+                  r.liked ? 'bg-green-600 text-white' : 'bg-green-100 text-green-700 hover:bg-green-200'
+                }`}
+              >
+                👍
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDislike(r.id);
+
+                  r.disliked = !r.disliked;
+                  r.liked = false;
+
+                  e.currentTarget.classList.toggle('bg-red-600', r.disliked);
+                  e.currentTarget.classList.toggle('text-white', r.disliked);
+
+                  const likeBtn = e.currentTarget.previousSibling;
+                  likeBtn.classList.remove('bg-green-600', 'text-white');
+                }}
+                className={`flex-1 py-2 rounded-lg font-bold ${
+                  r.disliked ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700 hover:bg-red-200'
+                }`}
+              >
+                👎
+              </button>
             </div>
           </div>
         ))}
@@ -374,7 +423,7 @@ const MapView = ({ restaurants, selectedId }) => {
 
     // Clear existing DOM markers
     const currentMarkers = document.getElementsByClassName('marker');
-    while(currentMarkers[0]) {
+    while (currentMarkers[0]) {
       currentMarkers[0].parentNode.removeChild(currentMarkers[0]);
     }
 
@@ -385,7 +434,7 @@ const MapView = ({ restaurants, selectedId }) => {
     // Calculate center of all restaurants
     const avgLat = restaurants.reduce((sum, r) => sum + (r.lat || 0), 0) / restaurants.length;
     const avgLng = restaurants.reduce((sum, r) => sum + (r.lng || 0), 0) / restaurants.length;
-    
+
     // Center map on results
     if (restaurants.length > 0) {
       mapRef.current.flyTo({
@@ -399,7 +448,7 @@ const MapView = ({ restaurants, selectedId }) => {
     // Generate new markers and popups
     restaurants.forEach(r => {
       if (!r.lat || !r.lng) return; // Skip if coordinates missing
-      
+
       const el = document.createElement('div');
       el.className = 'marker';
 
@@ -445,15 +494,15 @@ const MapView = ({ restaurants, selectedId }) => {
     // Close any open popus
     Object.values(markersRef.current).forEach(marker => {
       const p = marker.getPopup();
-      if (p && p.isOpen()) p.remove(); 
+      if (p && p.isOpen()) p.remove();
     });
 
     if (selectedData) {
       mapRef.current.flyTo({
         center: [selectedData.lng, selectedData.lat],
-        zoom: 16, 
-        pitch: 60, 
-        duration: 1500, 
+        zoom: 16,
+        pitch: 60,
+        duration: 1500,
         essential: true
       });
     }
@@ -484,7 +533,7 @@ const App = () => {
 
   const [userPrefs, setUserPrefs] = useState({
     dietary: [],
-    maxPrice: 4, 
+    maxPrice: 4,
     minRating: 0,
     adventurousness: 'Balanced'
   })
@@ -528,7 +577,7 @@ const App = () => {
         },
         (error) => {
           console.log('Geolocation error:', error);
-          
+
           // Default to Irvine if geolocation fails
           setUserLocation(DEFAULT_LOCATION);
         }
@@ -546,11 +595,11 @@ const App = () => {
       query = ' '
     else if (!query.trim()) return;
     setIsLoading(true);
-    
+
     try {
       // Prepare request data
-      const enhancedQuery = userPrefs.dietary.length > 0 
-        ? `${query} ${userPrefs.dietary.join(' ')}` 
+      const enhancedQuery = userPrefs.dietary.length > 0
+        ? `${query} ${userPrefs.dietary.join(' ')}`
         : query;
 
       // Make API call
@@ -578,7 +627,7 @@ const App = () => {
       }
 
       const data = await response.json();
-      
+
       // Format restaurants for display
       const formattedRestaurants = data.restaurants.map(r => ({
         ...r,
@@ -598,11 +647,11 @@ const App = () => {
 
   return (
     <div className="flex w-full h-full relative overflow-hidden">
-      <StartPage 
-        isOpen={showStartPage} 
+      <StartPage
+        isOpen={showStartPage}
         initialPrefs={userPrefs}
         isLoggedIn={isLoggedIn}
-        onClose={() => setShowStartPage(false)} 
+        onClose={() => setShowStartPage(false)}
         onSignUpClick={() => {
           setShowSignUp(true);
         }}
@@ -629,10 +678,10 @@ const App = () => {
           } catch (e) {
             // ignore
           }
-        }} 
+        }}
       />
-      
-      <SignUpPage 
+
+      <SignUpPage
         isOpen={showSignUp}
         onClose={() => {
           setShowSignUp(false)
@@ -686,17 +735,19 @@ const App = () => {
         }}
       />
 
-      <Sidebar 
-        restaurants={restaurants} 
+      <Sidebar
+        restaurants={restaurants}
         onSearch={handleSearch}
         isLoading={isLoading}
         selectedId={selectedId}
         onSelect={setSelectedId}
+        onLike={sendLike}
+        onDislike={sendDislike}
       />
 
-      <div className = "flex-1 relative">
-        <MapView 
-          restaurants={restaurants} 
+      <div className="flex-1 relative">
+        <MapView
+          restaurants={restaurants}
           selectedId={selectedId}
         />
       </div>

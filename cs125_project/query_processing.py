@@ -7,12 +7,12 @@ from datetime import datetime
 
 # Handle imports for both module and script execution
 try:
-    from .common import UserPreferences
+    from .api.models import UserPreference
     from .recommender import rank_places
     from .ingestion import AugmentedPlacesRepository, Place
 except ImportError:
     # Fallback for when running as script
-    from common import UserPreferences
+    from api.models import UserPreference
     from recommender import rank_places
     from ingestion import AugmentedPlacesRepository, Place
 
@@ -153,7 +153,7 @@ def build_request(query, user_location=None):
     return request_obj
 
 #Sends a Nearby Search request to Google Places API and returns top N restaurant recommendations.
-def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferences, api_key=GOOGLE_API_KEY, top_n=NUM_RECOMMENDATIONS) -> list[Place]:
+def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreference, api_key=GOOGLE_API_KEY, top_n=NUM_RECOMMENDATIONS) -> list[Place]:
     params = request_obj.copy()
 
     if 'lat' in params and 'lng' in params: # location extraction not working for me
@@ -170,7 +170,7 @@ def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferenc
     builder = places_repo.query_builder()
 
     builder = builder.within_radius(params['radius'], lat, lng)
-    builder = builder.price_between(prefs.hard_min_price_level.value - 1, min(prefs.hard_max_price_level.value - 1, prefs.max_price))
+    builder = builder.price_between(0, prefs.max_price)
     builder = builder.min_rating(prefs.min_rating)
 
     keywords = extract_keywords(query).split()
@@ -183,7 +183,6 @@ def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferenc
         keywords.extend(['gluten', 'gluten-free', 'gluten free'])
 
     hour = datetime.now().hour
-    radius = prefs.get_expected_proximity(hour) or 5
 
     print('HELLO')
     builder = builder.relevance_by(keywords)
@@ -197,7 +196,7 @@ def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferenc
 
 if __name__ == "__main__":
 
-    prefs = UserPreferences(
+    prefs = UserPreference(
         dietary = {"vegan_restaurant"},
         min_rating = 4.5
     )

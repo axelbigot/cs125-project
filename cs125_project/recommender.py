@@ -1,9 +1,9 @@
 try:
     from .ingestion import Place
-    from .common import UserPreferences
+    from .api.models import UserPreference
 except ImportError:
     from ingestion import Place
-    from common import UserPreferences
+    from api.models import UserPreference
 
 from math import radians, cos, sin, sqrt, atan2
 
@@ -17,7 +17,7 @@ def haversine_distance(lat1, lng1, lat2, lng2):
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return R * c
 
-def score_place(place: Place, prefs: UserPreferences, lat, lng):
+def score_place(place: Place, prefs: UserPreference, lat, lng):
     score = 0.0
 
     if place.rating:
@@ -30,7 +30,7 @@ def score_place(place: Place, prefs: UserPreferences, lat, lng):
         if t in prefs.cuisines:
             score += prefs.cuisines[t].satisfaction_score
     
-    if place.id in prefs.like_places:
+    if place.id in prefs.liked_places:
         W = 5.0
         if prefs.adventurousness == 'Safe':
             W = 10.0
@@ -38,7 +38,7 @@ def score_place(place: Place, prefs: UserPreferences, lat, lng):
             # Already visited
             W = -3.0
 
-        score += prefs.like_places[place.id].satisfaction_score * W
+        score += W
 
     if place.id in prefs.disliked_places:
         score -= 50

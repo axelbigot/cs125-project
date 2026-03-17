@@ -87,8 +87,8 @@ class UserPreferences:
 	max_price: int = 4
 	min_rating: float = 0.0
 	adventurousness: str = "Balanced"
-	disliked_places: Dict[str, ScoredRestaurant] = field(default_factory=dict)
-	like_places: Dict[str, ScoredRestaurant] = field(default_factory=dict)
+	disliked_places: list[str] = field(default_factory=list)
+	liked_places: list[str] = field(default_factory=list)
 	dietary: set = field(default_factory=set)  # e.g. {"vegan_restaurant", "halal"}
 	hard_min_price_level: PriceLevel = PriceLevel.PRICE_LEVEL_FREE
 	hard_max_price_level: PriceLevel = PriceLevel.PRICE_LEVEL_VERY_EXPENSIVE

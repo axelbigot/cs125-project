@@ -19,7 +19,7 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
 
-from .api.views import csrf, get_restaurants, login_view, logout_view, preferences, signup
+from .api.views import csrf, get_restaurants, login_view, logout_view, preferences, signup, like_place, dislike_place
 
 
 urlpatterns = [
@@ -30,5 +30,7 @@ urlpatterns = [
 	path('api/auth/login/', login_view),
 	path('api/auth/logout/', logout_view),
 	path('api/preferences/', preferences),
+	path('api/<str:place_id>/like', like_place),
+	path('api/<str:place_id>/dislike', dislike_place),
 	path('', TemplateView.as_view(template_name='index.html')),
 ]

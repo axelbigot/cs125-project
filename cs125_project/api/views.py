@@ -13,6 +13,15 @@ import json
 from .models import UserPreference
 
 
+def get_prefs(request):
+	if request.user.is_authenticated:
+		prefs, _ = UserPreference.objects.get_or_create(user=request.user)
+	else:
+		anon, _ = User.objects.get_or_create(username='anonymous')
+		prefs, _ = UserPreference.objects.get_or_create(user=anon)
+	return prefs
+	# return JsonResponse({'error': str(e)}, status=500)
+
 def _default_prefs_dict() -> dict:
 	return {
 		"dietary": [],
@@ -168,14 +177,12 @@ def get_restaurants(request: Any):
 				print(f'Query: "{query}"')
 				lat = data.get('lat')
 				lng = data.get('lng')
-				prefs_data = data.get('preferences', {})
 			except json.JSONDecodeError:
 				return JsonResponse({'error': 'Invalid JSON'}, status=400)
 		else:  # GET
 			query = request.GET.get('query', '')
 			lat = request.GET.get('lat')
 			lng = request.GET.get('lng')
-			prefs_data = {}
 		
 		if not query:
 			return JsonResponse({'error': 'Query parameter is required'}, status=400)
@@ -192,20 +199,7 @@ def get_restaurants(request: Any):
 		request_obj = build_request(query, user_location=user_location)
 
 		# Retrieve preferences: from DB if authenticated, else session; merge request overrides
-		if request.user.is_authenticated:
-			pref_obj, _ = UserPreference.objects.get_or_create(user=request.user)
-			base = pref_obj.to_dict()
-		else:
-			base = request.session.get("user_prefs", _default_prefs_dict()) or _default_prefs_dict()
-		# Merge request prefs over base (request overrides); supports camelCase and snake_case
-		merged = dict(base)
-		override_map = {"max_price": "maxPrice", "min_rating": "minRating", "price_bias": "priceBias"}
-		for k, v in (prefs_data or {}).items():
-			if v is not None and k in ("dietary", "maxPrice", "minRating", "adventurousness", "priceBias", "cuisines"):
-				merged[k] = v
-			elif v is not None and k in override_map:
-				merged[override_map[k]] = v
-		prefs = UserPreferences.from_dict(merged)
+		prefs = get_prefs(request)
 		
 		# Get raw recommendations from Google Places API
 		raw_recommendations = get_restaurant_recommendations(request_obj, query, prefs)
@@ -229,6 +223,8 @@ def get_restaurants(request: Any):
 				'type': ', '.join((place.types if place.types else [])[:2]) if place.types else 'Restaurant',
 				'vicinity': place.address,
 				'image': '',
+				'liked': place.id in prefs.liked_places,
+				'disliked': place.id in prefs.disliked_places,
 			}
 			formatted_restaurants.append(formatted_place)
 		
@@ -236,4 +232,33 @@ def get_restaurants(request: Any):
 	
 	except Exception as e:
 		raise
-		# return JsonResponse({'error': str(e)}, status=500)
+
+def like_place(request: Any, place_id: str):
+	prefs = get_prefs(request)
+
+	liked = set(prefs.liked_places or [])
+	disliked = set(prefs.disliked_places or [])
+
+	liked.add(place_id)
+	disliked.discard(place_id)
+
+	prefs.liked_places = list(liked)
+	prefs.disliked_places = list(disliked)
+	prefs.save(update_fields=["liked_places", "disliked_places"])
+
+	return JsonResponse({'status': 'liked'})
+
+def dislike_place(request: Any, place_id: str):
+	prefs = get_prefs(request)
+	
+	liked = set(prefs.liked_places or [])
+	disliked = set(prefs.disliked_places or [])
+
+	disliked.add(place_id)
+	liked.discard(place_id)
+
+	prefs.liked_places = list(liked)
+	prefs.disliked_places = list(disliked)
+	prefs.save(update_fields=["liked_places", "disliked_places"])
+
+	return JsonResponse({'status': 'disliked'})
