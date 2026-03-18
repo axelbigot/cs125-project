@@ -55,7 +55,7 @@ DISTANCE_REGEX = r'(\d+)\s*(mile|km|m|meter|meters)'
 # Open now keywords
 OPEN_NOW_KEYWORDS = ["open now", "currently open"]
 
-places_repo = AugmentedPlacesRepository()#force_migrate=True)
+places_repo = AugmentedPlacesRepository(force_migrate=True)
 
 def extract_keywords(query):
     # Remove punctuation

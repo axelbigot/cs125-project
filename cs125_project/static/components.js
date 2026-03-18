@@ -644,6 +644,13 @@ const App = () => {
     }
   }, []);
 
+  useEffect(() => {
+    // Only trigger if we have a location and haven't loaded restaurants yet
+    if (userLocation && restaurants.length === 0 && !isLoading) {
+      handleSearch(null); 
+    }
+  }, [userLocation]);
+
   // API call to fetch restaurants on search query
   const handleSearch = async (query) => {
     if (query === null)
