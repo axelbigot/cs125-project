@@ -15,6 +15,8 @@ class UserPreference(models.Model):
 	liked_places = models.JSONField(default=list, blank=True)
 	disliked_places = models.JSONField(default=list, blank=True)
 
+	top_searches = models.JSONField(default=dict, blank=True)
+
 	updated_at = models.DateTimeField(auto_now=True)
 
 	def to_dict(self) -> dict:

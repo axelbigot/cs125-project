@@ -27,6 +27,12 @@ STOPWORDS = set((
     "they he she them our your their some my"
 ).split())
 
+TIME_BUCKETS = {
+    'breakfast': (5, 11),
+    'lunch': (11, 17),
+    'dinner': (17, 23)
+}
+MAX_STORES_QUERIES = 50
 
 # Type mapping for Google Places API
 TYPE_MAPPING = {
@@ -86,6 +92,41 @@ def extract_radius(query):
         elif "m" in unit:
             return int(value)            # meters
     return None
+
+def top_searches_daycount(prefs: UserPreference, now: datetime):
+    hour = now.hour
+    weekday = now.strftime('%A')
+
+    bucket = 'Other'
+    for b, (st, end) in TIME_BUCKETS.items():
+        if st <= hour < end:
+            bucket = b
+            break
+
+    top_searches = prefs.top_searches or {}
+
+    if bucket not in top_searches:
+        top_searches[bucket] = {}
+    if weekday not in top_searches[bucket]:
+        top_searches[bucket][weekday] = {}
+
+    return top_searches, bucket, weekday, top_searches[bucket][weekday]
+
+def update_top_searches(prefs: UserPreference, query: str, now: datetime):
+    top_searches, bucket, weekday, day_counts = top_searches_daycount(prefs, now)
+    day_counts[query] = day_counts.get(query, 0) + 1
+
+    sorted_queries = sorted(day_counts.items(), key=lambda x: x[1], reverse=True)[:MAX_STORES_QUERIES]
+    top_searches[bucket][weekday] = dict(sorted_queries)
+
+    prefs.top_searches = top_searches
+    prefs.save(update_fields=['top_searches'])
+
+def get_top_searches(prefs: UserPreference, now: datetime):
+    _, _, _, day_counts = top_searches_daycount(prefs, now)
+
+    sorted_queries = sorted(day_counts.items(), key=lambda x: x[1], reverse=True)
+    return [q for q, _ in sorted_queries]
 
 # Extract location from a query and geocode it using Google Geocoding API.
 # Returns (lat, lng) or user_location fallback.
@@ -152,21 +193,7 @@ def build_request(query, user_location=None):
     
     return request_obj
 
-#Sends a Nearby Search request to Google Places API and returns top N restaurant recommendations.
-def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreference, api_key=GOOGLE_API_KEY, top_n=NUM_RECOMMENDATIONS) -> list[Place]:
-    params = request_obj.copy()
-
-    if 'lat' in params and 'lng' in params: # location extraction not working for me
-        lat = float(params['lat'])
-        lng = float(params['lng'])
-    else:
-        lat = 33.645963
-        lng = -117.842825
-
-    print(request_obj)
-    print(f'Query2: "{query}"')
-    print(prefs)
-
+def get_builder(query, prefs, params, lat, lng):
     builder = places_repo.query_builder()
 
     builder = builder.within_radius(params['radius'], lat, lng)
@@ -182,13 +209,35 @@ def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferenc
     elif 'Gluten Free' in prefs.dietary:
         keywords.extend(['gluten', 'gluten-free', 'gluten free'])
 
-    hour = datetime.now().hour
-
-    print('HELLO')
     builder = builder.relevance_by(keywords)
-    #builder.exclude_ids(prefs.disliked_places or [])
+    return builder
 
-    places = builder.select(limit=50)
+#Sends a Nearby Search request to Google Places API and returns top N restaurant recommendations.
+def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreference, api_key=GOOGLE_API_KEY, top_n=NUM_RECOMMENDATIONS) -> list[Place]:
+    params = request_obj.copy()
+
+    if 'lat' in params and 'lng' in params: # location extraction not working for me
+        lat = float(params['lat'])
+        lng = float(params['lng'])
+    else:
+        lat = 33.645963
+        lng = -117.842825
+
+    print(request_obj)
+    print(f'Query2: "{query}"')
+    print(prefs)
+
+    now = datetime.now()
+    if query == ' ':
+        top_queries = get_top_searches(prefs, now)[:4]
+        places: list[Place] = []
+        for q in top_queries:
+            builder = get_builder(q, prefs, params, lat, lng)
+            places.extend(builder.select(limit=10))
+    else:
+        builder = get_builder(query, prefs, params, lat, lng)
+        places = builder.select(limit=50)
+        update_top_searches(prefs, query, now)
 
     print([p.relevance for p in places])
     
