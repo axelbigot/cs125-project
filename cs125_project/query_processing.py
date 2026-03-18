@@ -55,7 +55,7 @@ DISTANCE_REGEX = r'(\d+)\s*(mile|km|m|meter|meters)'
 # Open now keywords
 OPEN_NOW_KEYWORDS = ["open now", "currently open"]
 
-places_repo = AugmentedPlacesRepository(force_migrate=True)
+places_repo = AugmentedPlacesRepository()#force_migrate=True)
 
 def extract_keywords(query):
     # Remove punctuation
@@ -234,6 +234,10 @@ def get_restaurant_recommendations(request_obj, query: str, prefs: UserPreferenc
         for q in top_queries:
             builder = get_builder(q, prefs, params, lat, lng)
             places.extend(builder.select(limit=10))
+
+        if len(places) < 50:
+            builder = get_builder(' ', prefs, params, lat, lng)
+            places.extend(builder.select(limit=(50 - len(places))))
     else:
         builder = get_builder(query, prefs, params, lat, lng)
         places = builder.select(limit=50)

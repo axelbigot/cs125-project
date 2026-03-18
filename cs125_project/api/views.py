@@ -13,11 +13,17 @@ import json
 from .models import UserPreference
 
 
+anon_reset = False
 def get_prefs(request):
 	if request.user.is_authenticated:
 		prefs, _ = UserPreference.objects.get_or_create(user=request.user)
 	else:
 		anon, _ = User.objects.get_or_create(username='anonymous')
+		global anon_reset
+		if not anon_reset:
+			logging.info(f'Deleted anon user')
+			UserPreference.objects.filter(user=anon).delete()
+			anon_reset = True
 		prefs, _ = UserPreference.objects.get_or_create(user=anon)
 	return prefs
 	# return JsonResponse({'error': str(e)}, status=500)
