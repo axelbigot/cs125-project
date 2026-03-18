@@ -55,7 +55,7 @@ const sendDislike = async (placeId) => {
 };
 
 /* START PAGE */
-const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLoggedIn }) => {
+const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLoggedIn, mode }) => {
 
   // Initialize user preferences
   const [prefs, setPrefs] = useState(initialPrefs || {
@@ -64,6 +64,12 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
     minRating: 0,
     adventurousness: 'Balanced'
   });
+
+  useEffect(() => {
+    if (initialPrefs) {
+      setPrefs(initialPrefs);
+    }
+  }, [initialPrefs, isOpen])
 
   if (!isOpen) return null;
 
@@ -91,21 +97,38 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
 
         {/* Header Section */}
         <div className="flex justify-between items-center mb-1">
-          <h2 className="text-2xl font-black tracking-tight uppercase">Welcome</h2>
+          <h2 className="text-2xl font-black tracking-tight uppercase">{mode === 'update' ? 'Preferences' : 'Welcome'}</h2>
 
-          <button
-            onClick={isLoggedIn ? null : onSignUpClick}
-            disabled={isLoggedIn}
-            className={`font-black tracking-widest uppercase px-4 py-1 rounded-xl transition-colors mt-2 ${isLoggedIn
-                ? 'bg-gray-100 text-gray-400 cursor-default'
-                : 'bg-black text-white hover:bg-gray-800'
-              }`}
-          >
-            {isLoggedIn ? 'Logged In' : 'Sign Up'}
-          </button>
+          <div className="flex items-center gap-2">
+            {mode === 'update' ? (
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-black transition-colors"
+                aria-label="Close"
+                title="Close"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            ) : null}
+
+            <button
+              onClick={isLoggedIn ? null : onSignUpClick}
+              disabled={isLoggedIn}
+              className={`font-black tracking-widest uppercase px-4 py-1 rounded-xl transition-colors mt-2 ${isLoggedIn
+                  ? 'bg-gray-100 text-gray-400 cursor-default'
+                  : 'bg-black text-white hover:bg-gray-800'
+                }`}
+            >
+              {isLoggedIn ? 'Logged In' : 'Sign Up'}
+            </button>
+          </div>
         </div>
 
-        <h4 className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Enter your preferences</h4>
+        <h4 className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">
+          {mode === 'update' ? 'Update your preferences' : 'Enter your preferences'}
+        </h4>
 
         {/* Dietary Selection */}
         <div className="mb-6">
@@ -188,7 +211,7 @@ const StartPage = ({ isOpen, onClose, onSave, onSignUpClick, initialPrefs, isLog
           }}
           className="w-full bg-black text-white font-black tracking-widest uppercase py-4 rounded-xl hover:bg-gray-800 transition-colors mt-4"
         >
-          Submit
+          {mode === 'update' ? 'Save' : 'Submit'}
         </button>
       </div>
     </div>
@@ -264,7 +287,7 @@ const SignUpPage = ({ isOpen, onClose, onSignUp }) => {
 }
 
 /* SIDEBAR */
-const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect, onLike, onDislike }) => {
+const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect, onLike, onDislike, onOpenPreferences }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [inputValue, setInputValue] = useState('');
 
@@ -287,8 +310,20 @@ const Sidebar = ({ restaurants, onSearch, isLoading, selectedId, onSelect, onLik
 
       {/* Search Header */}
       <div className="p-6 border-b border-gray-100 bg-white sticky top-0 z-20">
-        <h1 className="text-2xl font-black text-black tracking-tighter uppercase">Restaurant</h1>
-        <h1 className="text-2xl font-black text-black tracking-tighter uppercase">Recommender</h1>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-black text-black tracking-tighter uppercase">Restaurant</h1>
+            <h1 className="text-2xl font-black text-black tracking-tighter uppercase">Recommender</h1>
+          </div>
+
+          <button
+            type="button"
+            onClick={onOpenPreferences}
+            className="bg-black text-white font-black tracking-widest uppercase px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors text-xs"
+          >
+            Update Preferences
+          </button>
+        </div>
 
         <form onSubmit={handleSearch} className="relative mt-6">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -527,7 +562,16 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
-  const [showStartPage, setShowStartPage] = useState(true);
+  const [showStartPage, setShowStartPage] = useState(() => {
+    // Only force preferences entry if we have nothing saved locally.
+    // Users can still update anytime via the sidebar button.
+    try {
+      return !localStorage.getItem('userPrefs');
+    } catch (e) {
+      return true;
+    }
+  });
+  const [prefsModalMode, setPrefsModalMode] = useState('onboarding');
   const [showSignUp, setShowSignUp] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -544,7 +588,10 @@ const App = () => {
       // Fast path: localStorage (for instant UI)
       try {
         const raw = localStorage.getItem('userPrefs');
-        if (raw) setUserPrefs(JSON.parse(raw));
+        if (raw) {
+          setUserPrefs(JSON.parse(raw));
+          setShowStartPage(false);
+        }
       } catch (e) {
         // ignore
       }
@@ -554,7 +601,15 @@ const App = () => {
         const resp = await apiFetch('/api/preferences/', { method: 'GET' });
         if (resp.ok) {
           const data = await resp.json();
-          if (data?.preferences) setUserPrefs(data.preferences);
+          if (data?.preferences) {
+            setUserPrefs(data.preferences);
+            setShowStartPage(false);
+            try {
+              localStorage.setItem('userPrefs', JSON.stringify(data.preferences));
+            } catch (e) {
+              // ignore
+            }
+          }
           setIsLoggedIn(!!data?.authenticated);
         }
       } catch (e) {
@@ -652,6 +707,7 @@ const App = () => {
         initialPrefs={userPrefs}
         isLoggedIn={isLoggedIn}
         onClose={() => setShowStartPage(false)}
+        mode={prefsModalMode}
         onSignUpClick={() => {
           setShowSignUp(true);
         }}
@@ -743,6 +799,10 @@ const App = () => {
         onSelect={setSelectedId}
         onLike={sendLike}
         onDislike={sendDislike}
+        onOpenPreferences={() => {
+          setPrefsModalMode('update');
+          setShowStartPage(true);
+        }}
       />
 
       <div className="flex-1 relative">
